@@ -87,7 +87,6 @@ class MicroWebSrv2 :
         self._keepAlloc       = None
         self._maxContentLen   = None
         self._bindAddr        = ('0.0.0.0', 80)
-        self._sslContext      = None
         self._rootPath        = 'www'
         self._timeoutSec      = 2
         self._notFoundURL     = None
@@ -96,7 +95,7 @@ class MicroWebSrv2 :
         self._onLogging       = None
         self._xasSrv          = None
         self._xasPool         = None
-        self.SetNormalConfig()
+        self.SetEmbeddedConfig()
 
     # ------------------------------------------------------------------------
 
@@ -117,23 +116,8 @@ class MicroWebSrv2 :
     # ------------------------------------------------------------------------
 
     @staticmethod
-    def LoadModule(modName) :
-        if not isinstance(modName, str) or len(modName) == 0 :
-            raise ValueError('"modName" must be a not empty string.')
-        if modName in MicroWebSrv2._modules :
-            raise MicroWebSrv2Exception('Module "%s" is already loaded.' % modName)
-        try :
-            modPath  = MicroWebSrv2.__module__.split('microWebSrv2')[0] \
-                     + ('mods.%s' % modName)
-            module   = getattr(__import__(modPath).mods, modName)
-            modClass = getattr(module, modName)
-            if type(modClass) is not type :
-                raise Exception
-            modInstance = modClass()
-            MicroWebSrv2._modules[modName] = modInstance
-            return modInstance
-        except :
-            raise MicroWebSrv2Exception('Cannot load module "%s".' % modName)
+    def AddModule(modName, modInstance) :
+        MicroWebSrv2._modules[modName] = modInstance
 
     # ------------------------------------------------------------------------
 
@@ -273,16 +257,6 @@ class MicroWebSrv2 :
     # ------------------------------------------------------------------------
 
     def _onSrvClientAccepted(self, xAsyncTCPServer, xAsyncTCPClient) :
-        if self._sslContext :
-            try :
-                xAsyncTCPClient.StartSSLContext( sslContext = self._sslContext,
-                                                 serverSide = True )
-            except :
-                self.Log( 'SSL connection failed from %s:%s.'
-                          % xAsyncTCPClient.CliAddr,
-                          MicroWebSrv2.DEBUG )
-                xAsyncTCPClient.Close()
-                return
         HttpRequest(self, xAsyncTCPClient)
 
     # ------------------------------------------------------------------------
@@ -298,40 +272,6 @@ class MicroWebSrv2 :
     
     # ------------------------------------------------------------------------
 
-    def EnableSSL(self, certFile, keyFile, caFile=None) :
-        import ssl
-        if not hasattr(ssl, 'SSLContext') :
-            raise MicroWebSrv2Exception('Unable to use SSL (implementation not supported).')
-        if not isinstance(certFile, str) or len(certFile) == 0 :
-            raise ValueError('"certFile" must be a not empty string.')
-        if not isinstance(keyFile, str) or len(keyFile) == 0 :
-            raise ValueError('"keyFile" must be a not empty string.')
-        if caFile is not None and not isinstance(caFile, str) :
-            raise ValueError('"caFile" must be a string or None.')
-        self._validateChangeConf()
-        try :
-            ctx = ssl.create_default_context( ssl.Purpose.CLIENT_AUTH,
-                                              cafile = caFile )
-        except :
-            raise ValueError('"caFile" must indicate a valid PEM file.')
-        try :
-            ctx.load_cert_chain(certfile=certFile, keyfile=keyFile)
-        except :
-            raise ValueError('"certFile" and "keyFile" must indicate the valid certificate and key files.')
-        self._sslContext = ctx
-        if self._bindAddr[1] == 80 :
-            self._bindAddr = (self._bindAddr[0], 443)
-
-    # ------------------------------------------------------------------------
-
-    def DisableSSL(self) :
-        self._validateChangeConf()
-        self._sslContext = None
-        if self._bindAddr[1] == 443 :
-            self._bindAddr = (self._bindAddr[0], 80)
-
-    # ------------------------------------------------------------------------    
-
     def SetEmbeddedConfig(self) :
         self._validateChangeConf()
         self._backlog       = 8
@@ -339,36 +279,6 @@ class MicroWebSrv2 :
         self._slotsSize     = 1024
         self._keepAlloc     = True
         self._maxContentLen = 16*1024
-
-    # ------------------------------------------------------------------------
-
-    def SetLightConfig(self) :
-        self._validateChangeConf()
-        self._backlog       = 64
-        self._slotsCount    = 128
-        self._slotsSize     = 1024
-        self._keepAlloc     = True
-        self._maxContentLen = 512*1024
-
-    # ------------------------------------------------------------------------
-
-    def SetNormalConfig(self) :
-        self._validateChangeConf()
-        self._backlog       = 256
-        self._slotsCount    = 512
-        self._slotsSize     = 4*1024
-        self._keepAlloc     = True
-        self._maxContentLen = 2*1024*1024
-
-    # ------------------------------------------------------------------------
-
-    def SetLargeConfig(self) :
-        self._validateChangeConf()
-        self._backlog       = 512
-        self._slotsCount    = 2048
-        self._slotsSize     = 16*1024
-        self._keepAlloc     = True
-        self._maxContentLen = 8*1024*1024
 
     # ------------------------------------------------------------------------
 
@@ -458,12 +368,6 @@ class MicroWebSrv2 :
             raise ValueError('"BindAddress" has an incorrect port number.')
         self._validateChangeConf('"BindAddress"')
         self._bindAddr = value
-
-    # ------------------------------------------------------------------------
-
-    @property
-    def IsSSLEnabled(self) :
-        return (self._sslContext is not None)
 
     # ------------------------------------------------------------------------
 
