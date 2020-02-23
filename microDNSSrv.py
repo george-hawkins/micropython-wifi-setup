@@ -145,6 +145,7 @@ class MicroDNSSrv :
                     if ipB :
                         packet = MicroDNSSrv._getPacketAnswerA(packet, ipB)
                         if packet :
+                            print('Resolved', domName)
                             self._server.sendto(packet, cliAddr)
             except :
                 if not self._started :
