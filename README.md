@@ -34,6 +34,22 @@ I removed this code and in doing so I also removed `resolve_mdns_address`, i.e. 
 
 ---
 
+Look at what affect using [mpy-cross](https://github.com/micropython/micropython/tree/master/mpy-cross) has on available memory.
+
+You can check available memory like so:
+
+    >>> import micropython
+    >>> micropython.mem_info()
+    ...
+    >>> import gc
+    >>> gc.collect()
+    >>> micropython.mem_info()
+    ...
+
+Maybe it makes no difference _once things are compiled_ but simply ensures that the compiler won't run out of memory doing its job?
+
+---
+
 Sources:
 
 * https://github.com/jczic/MicroWebSrv2
