@@ -43,3 +43,48 @@ Sources:
 ---
 
 Note `LICENSE.md` is from MicroDNSSrv rather than being a license actively chosen by me.
+
+---
+
+You can dump the visible access points like so:
+
+    >>> json.dumps([(t[0], binascii.hexlify(t[1]), t[2]) for t in sta.scan()])
+
+When using the REPL, it escapes single quotes, i.e. "Foo's AP" is displayed as "Foo\'s AP", which is invalid JSON. This is just a REPL artifact. To get the un-munged JSOM:
+
+    >>> import network
+    >>> import json
+    >>> import binascii
+    >>> sta = network.WLAN(network.STA_IF)
+    >>> sta.active(True)
+    >>> with open('data.json', 'w') as f:
+    >>>     json.dump([(t[0], binascii.hexlify(t[1]), t[2]) for t in sta.scan()], f)
+
+    $ pyboard.py --device $PORT -f cp :data.json data.json
+
+The results (prettified) are something like this:
+
+```json
+[
+  [
+    "UPC Wi-Free",
+    "3a431d3e4ec7",
+    1
+  ],
+  [
+    "Salt_2GHz_8A9F85",
+    "44fe3b8a9f87",
+    11
+  ],
+  [
+    "JB_40",
+    "488d36d5c83a",
+    11
+  ],
+  [
+    "Sonja’s iPhone",
+    "664de20a139f",
+    6
+  ],
+  ...
+```
