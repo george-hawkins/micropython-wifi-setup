@@ -38,30 +38,20 @@ import socket
 # The biggest packet we will process
 MAX_PACKET_SIZE = const(1024)
 
-MAX_NAME_SEARCH = const(20)
-
 # DNS constants
     
 _MDNS_ADDR = '224.0.0.251'
 _MDNS_PORT = const(5353);
 _DNS_TTL = const(2 * 60) # two minute default TTL
 
-_FLAGS_QR_MASK     = const(0x8000) # query response mask
-_FLAGS_QR_QUERY    = const(0x0000) # query
 _FLAGS_QR_RESPONSE = const(0x8000) # response
 
 _FLAGS_AA = const(0x0400) # Authorative answer
 
 _CLASS_IN     = const(1)
-_CLASS_ANY    = const(255)
 _CLASS_MASK   = const(0x7FFF)
-_CLASS_UNIQUE = const(0x8000)
 
 _TYPE_A    = const(1)
-_TYPE_PTR  = const(12)
-_TYPE_TXT  = const(16)
-_TYPE_AAAA = const(28)
-_TYPE_SRV  = const(33)
 _TYPE_ANY  = const(255)
 
 # Convert a dotted IPv4 address string into four bytes, with some
@@ -71,11 +61,6 @@ def dotted_ip_to_bytes(ip):
     if len(l) != 4 or any(i<0 or i>255 for i in l):
         raise ValueError
     return bytes(l)
-
-# Convert four bytes into a dotted IPv4 address string, without any
-# sanity checks
-def bytes_to_dotted_ip(a):
-    return ".".join(str(i) for i in a)
 
 # Ensure that a name is in the form of a list of encoded blocks of
 # bytes, typically starting as a qualified domain name
@@ -133,16 +118,6 @@ def pack_name(buf, name):
         o += pl+1
     buf[o] = 0
 
-# Pack a question into a new array and return it as a memoryview
-def pack_question(name, qtype, qclass):
-    # Return a pre-packed question as a memoryview
-    name = check_name(name)
-    name_len = name_packed_len(name)
-    buf = bytearray(name_len + 4)
-    pack_name(buf, name)
-    pack_into("!HH", buf, name_len, qtype, qclass)
-    return memoryview(buf)
-
 # Pack an answer into a new array and return it as a memoryview
 def pack_answer(name, rtype, rclass, ttl, rdata):
     # Return a pre-packed answer as a memoryview
@@ -158,12 +133,6 @@ def pack_answer(name, rtype, rclass, ttl, rdata):
 def skip_question(buf, o):
     o = skip_name_at(buf, o)
     return o + 4
-
-# Advance the offset past the answer to which it points
-def skip_answer(buf, o):
-    o = skip_name_at(buf, o)
-    (rdlen,) = unpack_from("!H", buf, o+8)
-    return o + 10 + rdlen
 
 # Test if a questing an answer. Note that this also works for
 # comparing a "known answer" in a packet to a local answer. The code
@@ -191,7 +160,6 @@ class SlimDNSServer:
         self.adverts = []
         self.hostname = None
         self._reply_buffer = None
-        self._pending_question = None
         self.answered = False
         if hostname:
             self.advertise_hostname(hostname)
@@ -219,18 +187,6 @@ class SlimDNSServer:
 
         ip_bytes = dotted_ip_to_bytes(self.local_addr)
         
-        basename = hostname[0]
-        for i in range(MAX_NAME_SEARCH):
-            if i != 0:
-                hostname[0] = basename + b"-"+str(i)
-            addr = self.resolve_mdns_address(hostname, True)
-            # Some helpful machine might know us and send us our own address
-            if not addr or addr == ip_bytes:
-                break
-            # Even is seaching we have to give up eventually
-            if not find_vacant or i == MAX_NAME_SEARCH-1:
-                raise ValueError("Name in use")
-
         A_record = pack_answer(hostname, _TYPE_A, _CLASS_IN, _DNS_TTL, ip_bytes)
         self.adverts.append(A_record)
         self.hostname = hostname
@@ -254,13 +210,6 @@ class SlimDNSServer:
 
         # In theory we could do known answer suppression here
         # We don't, BIWIOMS
-
-        if self._pending_question:
-            for i in range(ans_count):
-                if compare_q_and_a(self._pending_question, 0, buf, o):
-                    if self._answer_callback(buf[o:skip_answer(buf,o)]):
-                        self.answered = True
-                o = skip_answer(buf,o)
 
         if not matches:
             return
@@ -316,53 +265,3 @@ class SlimDNSServer:
         while True:
             readers, _, _ = select([self.sock], [], [], None)
             self.process_waiting_packets()
-
-    def handle_question(self, q, answer_callback, fast=False, retry_count=3):
-        # Send our a (packed) question, and send matching replies to
-        # the answer_callback function.  This will stop after sending
-        # the given number of retries and waiting for the a timeout on
-        # each, or sooner if the answer_callback function returns True
-        p = bytearray(len(q)+12)
-        pack_into("!HHHHHH", p, 0,
-                  1, 0, 1, 0, 0, 0, 0)
-        p[12:] = q
-
-        self._pending_question = q
-        self._answer_callback = answer_callback
-        self.answered = False
-
-        try:
-            for i in range(retry_count):
-                if self.answered:
-                    break
-                self.sock.sendto(p, (_MDNS_ADDR, _MDNS_PORT))
-                timeout = time.ticks_ms() + (250 if fast else 1000)
-                while not self.answered:
-                    sel_time = time.ticks_diff(timeout, time.ticks_ms())
-                    if sel_time <= 0:
-                        break
-                    (rr, _, _) = select([self.sock], [], [], sel_time/1000.0)
-                    if rr:
-                        self.process_waiting_packets()
-        finally:
-            self._pending_question = None
-            self._answer_callback = None
-
-    def resolve_mdns_address(self, hostname, fast=False):
-        # Look up an IPv4 address for a hostname using mDNS.
-        q = pack_question(hostname, _TYPE_A, _CLASS_IN)
-        answer = []
-        def _answer_handler(a):
-            addr_offset = skip_name_at(a, 0) + 10
-            answer.append(a[addr_offset:addr_offset+4])
-            return True
-        self.handle_question(q, _answer_handler, fast)
-        return bytes(answer[0]) if answer else None
-
-    
-def test():
-    import network
-    sta_if = network.WLAN(network.STA_IF)
-    local_addr = sta_if.ifconfig()[0]
-    server = SlimDNSServer(local_addr, "micropython")
-    server.run_forever()
