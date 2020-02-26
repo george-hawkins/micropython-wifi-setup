@@ -32,9 +32,50 @@ slimDNS on its own is pulled in with `main-mdns.py` - to install it instead of `
 
     $ pyboard.py --device $PORT -f cp main-mdns.py :main.py
 
-To query the name advertised by `main-mdns.py`:
+To query the names advertised by `main-mdns.py`:
 
-    $ dig -p 5353 portal.local @224.0.0.251
+    $ dig @224.0.0.251 -p 5353 portal.local
+    $ dig @224.0.0.251 -p 5353 dns.local
+
+To see all the queries that slimDNS sees, i.e. not just the ones relating to names that it's advertising, uncomment the `print` in `compare_packed_names`.
+
+My Mac automatically tried to query for all these names:
+
+```
+_airplay
+_airport
+_apple-mobdev
+_apple-pairable
+_companion-link
+_googlecast
+_ipp
+_ipps
+_ippusb
+_pdl-datastream
+_printer
+_ptp
+_raop
+_rdlink
+_scanner
+_sleep-proxy
+_uscan
+_uscans
+```
+
+---
+
+Using slimDNS to lookup `dns.local` and then MicroDNSSrv to respond to any arbitrary name:
+
+    $ dig +short @dns.local foobar
+
+If you've overriden your nameserver to something like [8.8.8.8](https://en.wikipedia.org/wiki/Google_Public_DNS) then this is quite slow (I suspect it first tries to resolve `dns.local` via DNS and only then falls back to trying mDNS). In such a situation it's noticeably faster to explicitly resolve `dns.local` via mDNS:
+
+    $ nameserver=$(dig +short @224.0.0.251 -p 5353 dns.local)
+    $ dig +short @$nameserver foobar
+
+If you haven't overriden your nameserver, i.e. just accept the one configured when you connect to an AP, then the `@nameserver` can be omitted altogether:
+
+    $ dig +short foobar
 
 ---
 

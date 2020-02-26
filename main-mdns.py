@@ -8,26 +8,40 @@ addr = ap.ifconfig()[0]
 
 # ----------------------------------------------------------------------
 
+import select
+
+poller = select.poll()
+
+# ----------------------------------------------------------------------
+
 from microDNSSrv import MicroDNSSrv
 
-MicroDNSSrv.Create( { "*" : addr } )
+mds = MicroDNSSrv()
+mds.Start()
+
+addrBytes = MicroDNSSrv._ipV4StrToBytes(addr)
+
+# We answer with our address for _all_ names.
+def lookup(domName):
+    print('Resolved', domName)
+    return addrBytes
+
+poller.register(mds._server, select.POLLIN)
 
 # ----------------------------------------------------------------------
 
 from slimDNS import SlimDNSServer
 
-server = SlimDNSServer(addr)
+slimDns = SlimDNSServer(addr)
 
-# Lookup using `dig -p 5353 portal.local @224.0.0.251`.
+# Lookup using `dig @224.0.0.251 -p 5353 portal.local`.
 # You can add additional names with additional calls to `advertise_hostname`.
-server.advertise_hostname("portal")
-server.advertise_hostname("mdns")
+slimDns.advertise_hostname("portal")
+slimDns.advertise_hostname("dns")
 
-import select
+poller.register(slimDns.sock, select.POLLIN)
 
-poller = select.poll()
-
-poller.register(server.sock, select.POLLIN)
+# ----------------------------------------------------------------------
 
 def printEvent(event):
     if event == select.POLLIN:
@@ -44,6 +58,12 @@ def printEvent(event):
 while True:
     for (s, event) in poller.ipoll():
         printEvent(event)
-        if (s == server.sock):
-            if event == select.POLLIN:
-                server.process_waiting_packets()
+
+        if event == select.POLLIN:
+            if s == slimDns.sock:
+                slimDns.process_waiting_packets()
+            elif s == mds._server:
+                mds.process_request(lookup)
+
+# Currently there's no exit from the while but when there is we need to cleanup...
+mds.Stop()
