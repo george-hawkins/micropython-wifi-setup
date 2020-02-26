@@ -79,13 +79,6 @@ class MicroDNSSrv :
         return None
 
     # ============================================================================
-    # ===( Constructor )==========================================================
-    # ============================================================================
-
-    def __init__(self) :
-        self._started = False
-
-    # ============================================================================
     # ===( Server Thread )========================================================
     # ============================================================================
 
@@ -108,30 +101,14 @@ class MicroDNSSrv :
     # ============================================================================
 
     def Start(self) :
-        if not self._started :
-            self._server = socket.socket( socket.AF_INET,
-                                          socket.SOCK_DGRAM,
-                                          socket.IPPROTO_UDP )
-            self._server.setsockopt( socket.SOL_SOCKET,
-                                     socket.SO_REUSEADDR,
-                                     1 )
-            self._server.bind(('0.0.0.0', 53))
-            self._server.setblocking(True)
-            self._started = True
-
-    # ----------------------------------------------------------------------------
-
-    def Stop(self) :
-        if self._started :
-            self._started = False
-            self._server.close()
-            return True
-        return False
-
-    # ----------------------------------------------------------------------------
-
-    def IsStarted(self) :
-        return self._started
+        self._server = socket.socket( socket.AF_INET,
+                                      socket.SOCK_DGRAM,
+                                      socket.IPPROTO_UDP )
+        self._server.setsockopt( socket.SOL_SOCKET,
+                                 socket.SO_REUSEADDR,
+                                 1 )
+        self._server.bind(('0.0.0.0', 53))
+        self._server.setblocking(True)
 
     # ============================================================================
     # ============================================================================

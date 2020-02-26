@@ -66,4 +66,5 @@ while True:
                 mds.process_request(lookup)
 
 # Currently there's no exit from the while but when there is we need to cleanup...
-mds.Stop()
+mds._server.close()
+slimDns.sock.close()
