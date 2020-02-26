@@ -96,6 +96,7 @@ def compare_packed_names(buf, o, packed_name, po=0):
             po &= 0x3fff
         l1 = buf[o] +1
         l2 = packed_name[po] +1
+        # print('Comparing', bytes(buf[o:o+l1]))
         if l1 != l2 or buf[o:o+l1] != packed_name[po:po+l2]:
             return False
         o += l1
