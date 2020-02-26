@@ -27,7 +27,6 @@ if sys.implementation.name != "micropython":
     const = lambda x:x
 
 import time
-from select import select
 try:
     from ustruct import pack_into, unpack_from
 except:
@@ -152,17 +151,14 @@ def compare_q_and_a(q_buf, q_offset, a_buf, a_offset=0):
 
 # The main SlimDNSServer class           
 class SlimDNSServer:
-    def __init__(self, local_addr, hostname=None):
+    def __init__(self, local_addr):
         # If a hostname is give we try to register it
         self.local_addr = local_addr
         self.sock = self._make_socket()
         self.sock.bind(('', _MDNS_PORT))
         self.adverts = []
-        self.hostname = None
         self._reply_buffer = None
         self.answered = False
-        if hostname:
-            self.advertise_hostname(hostname)
 
     def _make_socket(self):
         # Note that on devices with a more complete UDP/IP stack it
@@ -189,7 +185,6 @@ class SlimDNSServer:
         
         A_record = pack_answer(hostname, _TYPE_A, _CLASS_IN, _DNS_TTL, ip_bytes)
         self.adverts.append(A_record)
-        self.hostname = hostname
 
         # We could add a reverse PTR record here.
         # We don't, BIWIOMS
@@ -245,23 +240,13 @@ class SlimDNSServer:
     def process_waiting_packets(self):
         # Handle all the packets that can be read immediately and
         # return as soon as none are waiting
-        while True:
-            readers, _, _ = select([self.sock], [], [], 0)
-            if not readers:
-                break
-            buf, addr = self.sock.recvfrom(MAX_PACKET_SIZE)
-            # print("Received {} bytes from {}".format(len(buf), addr))
-            if buf and addr[0] != self.local_addr:
-                try:
-                    self.process_packet(memoryview(buf), addr)
-                except IndexError:
-                    print("Index error processing packet; probably malformed data")
-                except Exception as e:
-                    print("Error processing packet: {}".format(e))
-                    # raise e
-
-    def run_forever(self):
-        # Only really useful once we have stable thread support
-        while True:
-            readers, _, _ = select([self.sock], [], [], None)
-            self.process_waiting_packets()
+        buf, addr = self.sock.recvfrom(MAX_PACKET_SIZE)
+        # print("Received {} bytes from {}".format(len(buf), addr))
+        if buf and addr[0] != self.local_addr:
+            try:
+                self.process_packet(memoryview(buf), addr)
+            except IndexError:
+                print("Index error processing packet; probably malformed data")
+            except Exception as e:
+                print("Error processing packet: {}".format(e))
+                # raise e
