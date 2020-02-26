@@ -155,3 +155,9 @@ The results (prettified) are something like this:
   ],
   ...
 ```
+
+---
+
+There are various interesting ports of MicroPython, some of which contain, among other things, e.g. more extensive support for ESP32 features.
+
+See Adafruit's page on the "[many forks & ports of MicroPython](https://github.com/adafruit/awesome-micropythons)".
