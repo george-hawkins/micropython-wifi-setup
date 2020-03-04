@@ -1,10 +1,29 @@
 ESP32-Setup
 ===========
 
-Basis setup:
+Basic setup:
 
-    $ source ~/esp-env/bin/activate
+    $ python3 -m venv env
+    $ source env/bin/activate
+    $ pip install --upgrade pip
+    $ curl -O https://raw.githubusercontent.com/micropython/micropython/master/tools/pyboard.py
+    $ chmod a+x pyboard.py
+    $ mv pyboard.py env/bin
+    $ pip install pyserial
+
+All these steps, except the `source`, just need to be done once. The `source` line needs to be executed whenever you create a new terminal session.
+
+On Mac:
+
     $ export PORT=/dev/cu.SLAB_USBtoUART
+
+On Linux:
+
+    $ export PORT=/dev/ttyUSB0
+
+Or if you've setup a `udev` rule to create a fixed name:
+
+    $ export PORT=/dev/cp2104
 
 Copying files:
 
@@ -23,6 +42,12 @@ This would mean only that particular device, with the key pre-installed, could d
 However an AES key is at minimum 128 bits, i.e. 32 hex digits, which is more than most people would want to type in - and you'd probably want to include two checksum digits so that it's possible to point out if the key looks good or not.
 
 One possibility would be to use a [password-based key derivation function](https://en.wikipedia.org/wiki/Key_derivation_function) (PBKDF) to generate a key from a more reasonable length password (see step 5. and the text below in this Crypto StackExchange [answer](https://crypto.stackexchange.com/a/53554/8854)). Currently [Argon2](https://en.wikipedia.org/wiki/Argon2) seems to be the first-choice PBKDF, however according to this [answer](https://forum.micropython.org/viewtopic.php?p=36116#p36116) on the MicroPython forums all such algorithms consume noticeable amounts of ROM "unlikely to ever appear by default in micropython firmware".
+
+---
+
+To pull in the new minimal `webserver.py`:
+
+    $ pyboard.py --device $PORT -f cp webserver.py :main.py
 
 ---
 

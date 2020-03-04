@@ -53,7 +53,7 @@ def printEvent(event):
     elif event == select.POLLHUP:
         print("HUP")
     else:
-        println("Event", event)
+        print("Event", event)
 
 while True:
     for (s, event) in poller.ipoll():
