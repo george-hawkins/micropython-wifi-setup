@@ -1,3 +1,5 @@
+# The compiler needs a lot of space to process XAsyncSockets etc. so
+# import them first before anything else starts to consume memory.
 from MicroWebSrv2.libs.XAsyncSockets import XBufferSlot, XAsyncTCPClient
 from MicroWebSrv2.httpRequest import HttpRequest
 
