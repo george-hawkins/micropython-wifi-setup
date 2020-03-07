@@ -6,6 +6,7 @@ Copyright © 2019 Jean-Christophe Bos & HC² (www.hc2.fr)
 
 from   os   import stat
 import json
+import sys
 
 # ============================================================================
 # ===( HttpResponse )=========================================================
@@ -144,7 +145,8 @@ class HttpResponse :
                     self._stream.close()
                     self._stream     = None
                     self._sendingBuf = self._sendingBuf[:n]
-            except :
+            except Exception as e:
+                sys.print_exception(e)
                 self._xasCli.Close()
                 self._mws2.Log( 'Stream cannot be read for request "%s".'
                                 % self._request._path,
@@ -190,7 +192,8 @@ class HttpResponse :
         if self._stream :
             try :
                 self._stream.close()
-            except :
+            except Exception as e:
+                sys.print_exception(e)
                 pass
             self._stream = None
         self._sendingBuf = None
@@ -273,7 +276,8 @@ class HttpResponse :
                             self._mws2.WARNING )
             try :
                 stream.close()
-            except :
+            except Exception as e:
+                sys.print_exception(e)
                 pass
             return
         if self._request._method != 'HEAD' :
@@ -283,7 +287,8 @@ class HttpResponse :
         else :
             try :
                 stream.close()
-            except :
+            except Exception as e:
+                sys.print_exception(e)
                 pass
         if not self._contentType :
             self._contentType = 'application/octet-stream'

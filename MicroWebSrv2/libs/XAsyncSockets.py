@@ -9,6 +9,7 @@ from   time     import sleep
 from   select   import select
 import socket
 import ssl
+import sys
 
 try :
     from time import perf_counter
@@ -261,7 +262,8 @@ class XAsyncSocket :
                (sendBufSlot is not None and type(sendBufSlot) is not XBufferSlot) :
                 raise Exception()
             asyncSocketsPool.AddAsyncSocket(self)
-        except :
+        except Exception as e:
+            sys.print_exception(e)
             raise XAsyncSocketException('XAsyncSocket : Arguments are incorrects.')
 
     # ------------------------------------------------------------------------
@@ -284,7 +286,8 @@ class XAsyncSocket :
         if self._asyncSocketsPool.RemoveAsyncSocket(self) :
             try :
                 self._socket.close()
-            except :
+            except Exception as e:
+                sys.print_exception(e)
                 pass
             self._socket = None
             if self._recvBufSlot is not None :
@@ -500,7 +503,8 @@ class XAsyncTCPClient(XAsyncSocket) :
                     cliSocket.settimeout(0)
                     cliSocket.setblocking(0)
                 ok = True
-        except :
+        except Exception as e:
+            sys.print_exception(e)
             pass
         if ok :
             asyncSocketsPool.NotifyNextReadyForWriting(asyncTCPCli, True)
@@ -527,7 +531,8 @@ class XAsyncTCPClient(XAsyncSocket) :
             self._rdBufView        = None
             self._wrBufView        = None
             self._socketOpened     = (cliAddr is not None)
-        except :
+        except Exception as e:
+            sys.print_exception(e)
             raise XAsyncTCPClientException('Error to creating XAsyncTCPClient, arguments are incorrects.')
 
     # ------------------------------------------------------------------------
@@ -536,11 +541,13 @@ class XAsyncTCPClient(XAsyncSocket) :
         if self._wrBufView :
             try :
                 self._socket.send(self._wrBufView)
-            except :
+            except Exception as e:
+                sys.print_exception(e)
                 pass
         try :
             self._socket.shutdown(socket.SHUT_RDWR)
-        except :
+        except Exception as e:
+            sys.print_exception(e)
             pass
         return self._close(XClosedReason.ClosedByHost)
 
@@ -583,6 +590,7 @@ class XAsyncTCPClient(XAsyncSocket) :
                                 try :
                                     self._onDataRecv(self, line, self._onDataRecvArg)
                                 except Exception as ex :
+                                    sys.print_exception(ex)
                                     raise XAsyncTCPClientException('Error when handling the "OnDataRecv" event : %s' % ex)
                             if self.IsSSL and self._socket.pending() > 0 :
                                 break
@@ -728,7 +736,8 @@ class XAsyncTCPClient(XAsyncSocket) :
                     self._onDataSentArg = onDataSentArg
                     self._asyncSocketsPool.NotifyNextReadyForWriting(self, True)
                     return True
-            except :
+            except Exception as e:
+                sys.print_exception(e)
                 pass
             raise XAsyncTCPClientException('AsyncSendData : "data" is incorrect.')
         return False
@@ -948,7 +957,8 @@ class XAsyncUDPDatagram(XAsyncSocket) :
                     self._onDataSentArg = onDataSentArg
                     self._asyncSocketsPool.NotifyNextReadyForWriting(self, True)
                     return True
-            except :
+            except Exception as e:
+                sys.print_exception(e)
                 pass
             raise XAsyncUDPDatagramException('AsyncSendDatagram : Arguments are incorrects.')
         return False

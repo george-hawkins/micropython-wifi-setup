@@ -1,3 +1,6 @@
+from MicroWebSrv2.libs.XAsyncSockets import XBufferSlot, XAsyncTCPClient
+from MicroWebSrv2.httpRequest import HttpRequest
+
 import errno
 import btree
 import network
@@ -6,10 +9,6 @@ import time
 
 from socket import socket
 import select
-
-# TODO: technically the `.httRequest` and `.libs.X...` aren't requires because of `MicroWebSrv2.__init__`.
-from MicroWebSrv2.httpRequest import HttpRequest
-from MicroWebSrv2.libs.XAsyncSockets import XBufferSlot, XAsyncTCPClient
 
 
 # Open or create a file in binary mode for updating.
@@ -36,7 +35,8 @@ if SSID not in db:
 # If this exception occurs, go to the REPL and enter:
 # >>> db[SSID] = "My WiFi network"
 # >>> db[PASSWORD] = "My WiFi password"
-# >>> db.sync()
+# >>> db.flush()
+# And then reset the board.
 
 ssid = db[SSID]
 password = db[PASSWORD]

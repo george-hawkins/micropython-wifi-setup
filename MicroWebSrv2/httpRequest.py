@@ -4,10 +4,12 @@ The MIT License (MIT)
 Copyright © 2019 Jean-Christophe Bos & HC² (www.hc2.fr)
 """
 
-from   .              import *
+from   .libs.urlUtils import UrlUtils
+from   .webRoute import ResolveRoute
 from   .httpResponse  import HttpResponse
 from   binascii       import a2b_base64
 import json
+import sys
 
 # ============================================================================
 # ===( HttpRequest )==========================================================
@@ -62,7 +64,8 @@ class HttpRequest :
                 self._recvLine(self._onHeaderLineRecv)
             else :
                 self._response.ReturnBadRequest()
-        except :
+        except Exception as e:
+            sys.print_exception(e)
             self._response.ReturnBadRequest()
 
     # ------------------------------------------------------------------------
@@ -80,7 +83,8 @@ class HttpRequest :
                 self._processRequest()
             else :
                 self._response.ReturnBadRequest()
-        except :
+        except Exception as e:
+            sys.print_exception(e)
             self._response.ReturnBadRequest()
 
     # ------------------------------------------------------------------------
@@ -187,7 +191,8 @@ class HttpRequest :
                     if len(p) > 0 :
                         v = (UrlUtils.UnquotePlus(p[1]) if len(p) > 1 else '')
                         res[UrlUtils.UnquotePlus(p[0])] = v
-            except :
+            except Exception as e:
+                sys.print_exception(e)
                 pass
         return res
 
@@ -198,7 +203,8 @@ class HttpRequest :
             try :
                 s = bytes(self._content).decode('UTF-8')
                 return json.loads(s)
-            except :
+            except Exception as e:
+                sys.print_exception(e)
                 pass
         return None
 
@@ -225,7 +231,8 @@ class HttpRequest :
                     auth = auth.split(':')
                     return ( auth[0].lower() == username.lower() and \
                              auth[1] == password )
-            except :
+            except Exception as e:
+                sys.print_exception(e)
                 pass
         return False
 
@@ -241,7 +248,8 @@ class HttpRequest :
                 return ( len(auth) == 2 and \
                          auth[0].lower() == 'bearer' and \
                          auth[1] == token )
-            except :
+            except Exception as e:
+                sys.print_exception(e)
                 pass
         return False
 

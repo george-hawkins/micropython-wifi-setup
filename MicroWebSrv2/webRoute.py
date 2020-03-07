@@ -5,6 +5,7 @@ Copyright © 2019 Jean-Christophe Bos & HC² (www.hc2.fr)
 """
 
 import re
+import sys
 
 # ============================================================================
 # ===( @WebRoute decorator )==================================================
@@ -86,11 +87,13 @@ def ResolveRoute(method, path) :
                         argValue = reMatch.group(i+1)
                         try :
                             argValue = int(argValue)
-                        except :
+                        except Exception as e:
+                            sys.print_exception(e)
                             pass
                         args[argName] = argValue
                     return RouteResult(regRoute, args)
-    except :
+    except Exception as e:
+        sys.print_exception(e)
         pass
     return None
 
