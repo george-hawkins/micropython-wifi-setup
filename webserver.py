@@ -56,7 +56,7 @@ server_socket = socket()
 server_socket.bind(server_address)
 
 # The backlog argument to `listen` isn't optional for the ESP32 port.
-# Internally the backlog is clipped with `LWIP_MIN(LWIP_MAX(backlog, 0), 0xff)`.
+# Internally any passed in backlog value is clipped to a maximum of 255.
 LISTEN_MAX = 255
 
 server_socket.listen(LISTEN_MAX)
@@ -65,18 +65,17 @@ server_socket.listen(LISTEN_MAX)
 
 poller = select.poll()
 
+pollEvents = {
+    select.POLLIN: "IN",
+    select.POLLOUT: "OUT",
+    select.POLLHUP: "HUP",
+    select.POLLERR: "ERR"
+}
+
 
 def print_event(event):
-    if event == select.POLLIN:
-        print("IN")
-    elif event == select.POLLOUT:
-        print("OUT")
-    elif event == select.POLLERR:
-        print("ERR")
-    elif event == select.POLLHUP:
-        print("HUP")
-    else:
-        print("Event", event)
+    s = pollEvents.get(event, event)
+    print("Event", s)
 
 # ----------------------------------------------------------------------
 
