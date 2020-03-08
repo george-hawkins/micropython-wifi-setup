@@ -15,86 +15,46 @@ import sys
 class HttpResponse :
 
     _RESPONSE_CODES = {
-        100: ( 'Continue',
-               'Request received, please continue.' ),
-        101: ( 'Switching Protocols',
-               'Switching to new protocol; obey Upgrade header.' ),
-        200: ( 'OK',
-               'Request fulfilled, document follows.' ),
-        201: ( 'Created',
-               'Document created, URL follows' ),
-        202: ( 'Accepted',
-               'Request accepted, processing continues off-line.' ),
-        203: ( 'Non-Authoritative Information',
-               'Request fulfilled from cache' ),
-        204: ( 'No Content',
-               'Request fulfilled, nothing follows.' ),
-        205: ( 'Reset Content',
-               'Clear input form for further input.' ),
-        206: ( 'Partial Content',
-               'Partial content follows.' ),
-        300: ( 'Multiple Choices',
-               'Object has several resources -- see URI list.' ),
-        301: ( 'Moved Permanently',
-               'Object moved permanently -- see URI list.' ),
-        302: ( 'Found',
-               'Object moved temporarily -- see URI list.' ),
-        303: ( 'See Other',
-               'Object moved -- see Method and URL list.' ),
-        304: ( 'Not Modified',
-               'Document has not changed since given time.' ),
-        305: ( 'Use Proxy',
-               'You must use proxy specified in Location to access this resource.' ),
-        307: ( 'Temporary Redirect',
-               'Object moved temporarily -- see URI list.' ),
-        400: ( 'Bad Request',
-               'Bad request syntax or unsupported method.' ),
-        401: ( 'Unauthorized',
-               'No permission -- see authorization schemes.' ),
-        402: ( 'Payment Required',
-               'No payment -- see charging schemes.' ),
-        403: ( 'Forbidden',
-               'Request forbidden -- authorization will not help.' ),
-        404: ( 'Not Found',
-               'Nothing matches the given URI.' ),
-        405: ( 'Method Not Allowed',
-               'Specified method is invalid for this resource.' ),
-        406: ( 'Not Acceptable',
-               'URI not available in preferred format.' ),
-        407: ( 'Proxy Authentication Required',
-               'You must authenticate with this proxy before proceeding.' ),
-        408: ( 'Request Timeout',
-               'Request timed out; try again later.' ),
-        409: ( 'Conflict',
-               'Request conflict.' ),
-        410: ( 'Gone',
-               'URI no longer exists and has been permanently removed.' ),
-        411: ( 'Length Required',
-               'Client must specify Content-Length.' ),
-        412: ( 'Precondition Failed',
-               'Precondition in headers is false.' ),
-        413: ( 'Request Entity Too Large',
-               'Entity is too large.' ),
-        414: ( 'Request-URI Too Long',
-               'URI is too long.' ),
-        415: ( 'Unsupported Media Type',
-               'Entity body in unsupported format.' ),
-        416: ( 'Requested Range Not Satisfiable',
-               'Cannot satisfy request range.' ),
-        417: ( 'Expectation Failed',
-               'Expect condition could not be satisfied.' ),
-        500: ( 'Internal Server Error',
-               'Server got itself in trouble.' ),
-        501: ( 'Not Implemented',
-               'Server does not support this operation.' ),
-        502: ( 'Bad Gateway',
-               'Invalid responses from another server/proxy.' ),
-        503: ( 'Service Unavailable',
-               'The server cannot process the request due to a high load.' ),
-        504: ( 'Gateway Timeout',
-               'The gateway server did not receive a timely response.' ),
-        505: ( 'HTTP Version Not Supported',
-               'Cannot fulfill request.' )
+        100: 'Continue',
+        101: 'Switching Protocols',
+        200: 'OK',
+        201: 'Created',
+        202: 'Accepted',
+        203: 'Non-Authoritative Information',
+        204: 'No Content',
+        205: 'Reset Content',
+        206: 'Partial Content',
+        300: 'Multiple Choices',
+        301: 'Moved Permanently',
+        302: 'Found',
+        303: 'See Other',
+        304: 'Not Modified',
+        305: 'Use Proxy',
+        307: 'Temporary Redirect',
+        400: 'Bad Request',
+        401: 'Unauthorized',
+        402: 'Payment Required',
+        403: 'Forbidden',
+        404: 'Not Found',
+        405: 'Method Not Allowed',
+        406: 'Not Acceptable',
+        407: 'Proxy Authentication Required',
+        408: 'Request Timeout',
+        409: 'Conflict',
+        410: 'Gone',
+        411: 'Length Required',
+        412: 'Precondition Failed',
+        413: 'Request Entity Too Large',
+        414: 'Request-URI Too Long',
+        415: 'Unsupported Media Type',
+        416: 'Requested Range Not Satisfiable',
+        417: 'Expectation Failed',
+        500: 'Internal Server Error',
+        501: 'Not Implemented',
+        502: 'Bad Gateway',
+        503: 'Service Unavailable',
+        504: 'Gateway Timeout',
+        505: 'HTTP Version Not Supported'
     }
 
     _CODE_CONTENT_TMPL = """\
@@ -102,9 +62,8 @@ class HttpResponse :
         <head>
             <title>MicroWebSrv2</title>
         </head>
-        <body style="font-family: Verdana; background-color: Black; color: White;">
+        <body>
             <h2>MicroWebSrv2 - [%(code)d] %(reason)s</h2>
-            %(message)s
         </body>
     </html>
     """
@@ -198,7 +157,7 @@ class HttpResponse :
     # ------------------------------------------------------------------------
 
     def _makeBaseResponseHdr(self, code) :
-        reason = self._RESPONSE_CODES.get(code, ('Unknown reason', ))[0]
+        reason = self._RESPONSE_CODES.get(code, 'Unknown reason')
         self._mws2.Log( 'From %s:%s %s %s >> [%s] %s'
                         % ( self._xasCli.CliAddr[0],
                             self._xasCli.CliAddr[1],
@@ -297,11 +256,10 @@ class HttpResponse :
                             self._mws2.WARNING )
             return
         if not content :
-            respCode          = self._RESPONSE_CODES.get(code, ('Unknown reason', ''))
+            respCode          = self._RESPONSE_CODES.get(code, 'Unknown reason')
             self._contentType = 'text/html'
             content           = self._CODE_CONTENT_TMPL % { 'code'    : code,
-                                                            'reason'  : respCode[0],
-                                                            'message' : respCode[1] }
+                                                            'reason'  : respCode }
         if isinstance(content, str) :
             content = content.encode('UTF-8')
             if not self._contentType :
