@@ -166,11 +166,6 @@ class XAsyncTCPClient(XAsyncSocket) :
             except Exception as e:
                 sys.print_exception(e)
                 pass
-        try :
-            self._socket.shutdown(socket.SHUT_RDWR)
-        except Exception as e:
-            sys.print_exception(e)
-            pass
         return self._close(XClosedReason.ClosedByHost)
 
     # ------------------------------------------------------------------------
