@@ -101,7 +101,9 @@ def ResolveRoute(method, path) :
 # ===( PathFromRoute )========================================================
 # ============================================================================
 
-def PathFromRoute(routeName, routeArgs={ }) :
+def PathFromRoute(routeName, routeArgs=None) :
+    if routeArgs is None:
+        routeArgs = {}
     if not isinstance(routeName, str) or len(routeName) == 0 :
         raise ValueError('"routeName" requires a not empty string.')
     if not isinstance(routeArgs, dict) :
