@@ -334,12 +334,6 @@ class HttpRequest :
     # ------------------------------------------------------------------------
 
     @property
-    def IsKeepAlive(self) :
-        return ('keep-alive' in self._headers.get('connection', '').lower())
-
-    # ------------------------------------------------------------------------
-
-    @property
     def IsUpgrade(self) :
         return ('upgrade' in self._headers.get('connection', '').lower())
 

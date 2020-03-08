@@ -175,10 +175,7 @@ class HttpResponse :
                 self._xasCli.AsyncSendData(data, onDataSent=onChunkHdrSent)
         else :
             self._xasCli.OnClosed = None
-            if self._keepAlive :
-                self._request._waitForRecvRequest()
-            else :
-                self._xasCli.Close()
+            self._xasCli.Close()
             if self._onSent :
                 try :
                     self._onSent(self._mws2, self)
@@ -224,15 +221,7 @@ class HttpResponse :
     # ------------------------------------------------------------------------
 
     def _makeResponseHdr(self, code) :
-        if code >= 200 and code < 300 :
-            self._keepAlive = self._request.IsKeepAlive
-        else :
-            self._keepAlive = False
-        if self._keepAlive :
-            self.SetHeader('Connection', 'Keep-Alive')
-            self.SetHeader('Keep-Alive', 'timeout=%s' % self._mws2._timeoutSec)
-        else :
-            self.SetHeader('Connection', 'Close')
+        self.SetHeader('Connection', 'Close')
         if self._allowCaching :
             self.SetHeader('Cache-Control', 'public, max-age=31536000')
         else :
@@ -394,19 +383,6 @@ class HttpResponse :
 
     # ------------------------------------------------------------------------
 
-    def ReturnUnauthorized(self, typeName, realm=None) :
-        if not isinstance(typeName, str) or len(typeName) == 0 :
-            raise ValueError('"typeName" must be a not empty string.')
-        if realm is not None and not isinstance(realm, str) :
-            raise ValueError('"realm" must be a string or None.')
-        wwwAuth = typeName
-        if realm :
-            wwwAuth += (' realm="%s"' % realm.replace('"', "'")) if realm else ''
-        self.SetHeader('WWW-Authenticate', wwwAuth)
-        self.Return(401)
-
-    # ------------------------------------------------------------------------
-
     def ReturnForbidden(self) :
         self.Return(403)
 
@@ -442,16 +418,6 @@ class HttpResponse :
 
     def ReturnServiceUnavailable(self) :
         self.Return(503)
-
-    # ------------------------------------------------------------------------
-
-    def ReturnBasicAuthRequired(self) :
-        self.ReturnUnauthorized('Basic')
-
-    # ------------------------------------------------------------------------
-
-    def ReturnBearerAuthRequired(self) :
-        self.ReturnUnauthorized('Bearer')
 
     # ------------------------------------------------------------------------
 
