@@ -6,7 +6,6 @@ Copyright © 2019 Jean-Christophe Bos & HC² (www.hc2.fr)
 
 from   select   import select
 import socket
-import ssl
 import sys
 
 try :
@@ -205,10 +204,6 @@ class XAsyncTCPClient(XAsyncSocket) :
                     try :
                         try :
                             b = self._socket.recv(1)
-                        except ssl.SSLError as sslErr :
-                            if sslErr.args[0] != ssl.SSL_ERROR_WANT_READ :
-                                self._close()
-                            return
                         except BlockingIOError as bioErr :
                             if bioErr.errno != 35 :
                                 self._close()
@@ -236,8 +231,6 @@ class XAsyncTCPClient(XAsyncSocket) :
                                 except Exception as ex :
                                     sys.print_exception(ex)
                                     raise XAsyncTCPClientException('Error when handling the "OnDataRecv" event : %s' % ex)
-                            if self.IsSSL and self._socket.pending() > 0 :
-                                break
                             return
                         elif b != b'\r' :
                             if self._rdLinePos < self._recvBufSlot.Size :
@@ -255,10 +248,6 @@ class XAsyncTCPClient(XAsyncSocket) :
                 try :
                     try :
                         n = self._socket.recv_into(recvBuf)
-                    except ssl.SSLError as sslErr :
-                        if sslErr.args[0] != ssl.SSL_ERROR_WANT_READ :
-                            self._close()
-                        return
                     except BlockingIOError as bioErr :
                         if bioErr.errno != 35 :
                             self._close()
@@ -286,8 +275,7 @@ class XAsyncTCPClient(XAsyncSocket) :
                             self._onDataRecv(self, data, self._onDataRecvArg)
                         except Exception as ex :
                             raise XAsyncTCPClientException('Error when handling the "OnDataRecv" event : %s' % ex)
-                    if not self.IsSSL or self._socket.pending() == 0 :
-                        return
+                    return
             else :
                 return
 
@@ -404,70 +392,6 @@ class XAsyncTCPClient(XAsyncSocket) :
 
     # ------------------------------------------------------------------------
 
-    def _doSSLHandshake(self) :
-        count = 0
-        while count < 10 :
-            try :
-                self._socket.do_handshake()
-                break
-            except ssl.SSLError as sslErr :
-                count += 1
-                if sslErr.args[0] == ssl.SSL_ERROR_WANT_READ :
-                    select([self._socket], [], [], 1)
-                elif sslErr.args[0] == ssl.SSL_ERROR_WANT_WRITE :
-                    select([], [self._socket], [], 1)
-                else :
-                    raise XAsyncTCPClientException('SSL : Bad handshake : %s' % sslErr)
-            except Exception as ex :
-                raise XAsyncTCPClientException('SSL : Handshake error : %s' % ex)
-
-    # ------------------------------------------------------------------------
-
-    def StartSSL( self,
-                  keyfile     = None,
-                  certfile    = None,
-                  server_side = False,
-                  cert_reqs   = 0,
-                  ca_certs    = None ) :
-        if not hasattr(ssl, 'SSLContext') :
-            raise XAsyncTCPClientException('StartSSL : This SSL implementation is not supported.')
-        if self.IsSSL :
-            raise XAsyncTCPClientException('StartSSL : SSL already started.')
-        try :
-            self._asyncSocketsPool.NotifyNextReadyForWriting(self, False)
-            self._asyncSocketsPool.NotifyNextReadyForReading(self, False)
-            self._socket = ssl.wrap_socket( self._socket,
-                                            keyfile     = keyfile,
-                                            certfile    = certfile,
-                                            server_side = server_side,
-                                            cert_reqs   = cert_reqs,
-                                            ca_certs    = ca_certs,
-                                            do_handshake_on_connect = False )
-        except Exception as ex :
-            raise XAsyncTCPClientException('StartSSL : %s' % ex)
-        self._doSSLHandshake()
-
-    # ------------------------------------------------------------------------
-
-    def StartSSLContext(self, sslContext, serverSide=False) :
-        if not hasattr(ssl, 'SSLContext') :
-            raise XAsyncTCPClientException('StartSSLContext : This SSL implementation is not supported.')
-        if not isinstance(sslContext, ssl.SSLContext) :
-            raise XAsyncTCPClientException('StartSSLContext : "sslContext" is incorrect.')
-        if self.IsSSL :
-            raise XAsyncTCPClientException('StartSSLContext : SSL already started.')
-        try :
-            self._asyncSocketsPool.NotifyNextReadyForWriting(self, False)
-            self._asyncSocketsPool.NotifyNextReadyForReading(self, False)
-            self._socket = sslContext.wrap_socket( self._socket,
-                                                   server_side             = serverSide,
-                                                   do_handshake_on_connect = False )
-        except Exception as ex :
-            raise XAsyncTCPClientException('StartSSLContext : %s' % ex)
-        self._doSSLHandshake()
-
-    # ------------------------------------------------------------------------
-
     @property
     def SrvAddr(self) :
         return self._srvAddr
@@ -475,11 +399,6 @@ class XAsyncTCPClient(XAsyncSocket) :
     @property
     def CliAddr(self) :
         return self._cliAddr
-
-    @property
-    def IsSSL(self) :
-        return ( hasattr(ssl, 'SSLContext') and \
-                 isinstance(self._socket, ssl.SSLSocket) )
 
     @property
     def SendingBuffer(self) :

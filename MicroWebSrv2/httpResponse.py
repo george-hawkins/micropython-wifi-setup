@@ -202,10 +202,9 @@ class HttpResponse :
 
     def _makeBaseResponseHdr(self, code) :
         reason = self._RESPONSE_CODES.get(code, ('Unknown reason', ))[0]
-        self._mws2.Log( 'From %s:%s %s%s %s >> [%s] %s'
+        self._mws2.Log( 'From %s:%s %s %s >> [%s] %s'
                         % ( self._xasCli.CliAddr[0],
                             self._xasCli.CliAddr[1],
-                            ('SSL-' if self.IsSSL else ''),
                             self._request._method,
                             self._request._path,
                             code,
@@ -465,12 +464,6 @@ class HttpResponse :
     @property
     def UserAddress(self) :
         return self._xasCli.CliAddr
-
-    # ------------------------------------------------------------------------
-
-    @property
-    def IsSSL(self) :
-        return self._xasCli.IsSSL
 
     # ------------------------------------------------------------------------
 

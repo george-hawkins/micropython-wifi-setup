@@ -262,12 +262,6 @@ class HttpRequest :
     # ------------------------------------------------------------------------
 
     @property
-    def IsSSL(self) :
-        return self._xasCli.IsSSL
-
-    # ------------------------------------------------------------------------
-
-    @property
     def HttpVer(self) :
         return self._httpVer
 
