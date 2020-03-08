@@ -176,10 +176,11 @@ send_buf_slot = XBufferSlot(SLOT_SIZE)
 while True:
     client_socket, client_address = server_socket.accept()
     try:
-        tcp_client = XAsyncTCPClient(socket_pool, client_socket, server_address, client_address,
-                                     recv_buf_slot, send_buf_slot)
+        tcp_client = XAsyncTCPClient(socket_pool, client_socket, client_address, recv_buf_slot, send_buf_slot)
         request = HttpRequest(micro_server, tcp_client)
         while socket_pool.has_async_socket():
+            # TODO: add in time-out logic. See lines 115 and 133 onward in
+            #  https://github.com/jczic/MicroWebSrv2/blob/d8663f6/MicroWebSrv2/libs/XAsyncSockets.py
             for (s, event) in poller.ipoll():
                 print_event(event)
                 socket_pool.dispatch(s, event)

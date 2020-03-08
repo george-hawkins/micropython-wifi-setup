@@ -4,11 +4,11 @@ Copyright © 2019 Jean-Christophe Bos & HC² (www.hc2.fr)
 """
 
 
-from   select   import select
 import socket
 import sys
 
 try :
+    # MicroPython 1.12 ESP32 port does not have perf_counter.
     from time import perf_counter
 except :
     from time import ticks_ms
@@ -43,7 +43,6 @@ class XAsyncSocket :
         self._recvBufSlot      = recvBufSlot
         self._sendBufSlot      = sendBufSlot
         self._expireTimeSec    = None
-        self._state            = None
         self._onClosed         = None
         try :
             socket.settimeout(0)
@@ -81,10 +80,8 @@ class XAsyncSocket :
                 pass
             self._socket = None
             if self._recvBufSlot is not None :
-                self._recvBufSlot.Available = True
                 self._recvBufSlot = None
             if self._sendBufSlot is not None :
-                self._sendBufSlot.Available = True
                 self._sendBufSlot = None
             if triggerOnClosed and self._onClosed :
                 try :
@@ -93,11 +90,6 @@ class XAsyncSocket :
                     raise XAsyncSocketException('Error when handling the "OnClose" event : %s' % ex)
             return True
         return False
-
-    # ------------------------------------------------------------------------
-
-    def GetAsyncSocketsPool(self) :
-        return self._asyncSocketsPool
 
     # ------------------------------------------------------------------------
 
@@ -127,10 +119,6 @@ class XAsyncSocket :
     # ------------------------------------------------------------------------
 
     @property
-    def SocketID(self) :
-        return self._socket.fileno() if self._socket else None
-
-    @property
     def ExpireTimeSec(self) :
         return self._expireTimeSec
 
@@ -141,13 +129,6 @@ class XAsyncSocket :
     def OnClosed(self, value) :
         self._onClosed = value
 
-    @property
-    def State(self) :
-        return self._state
-    @State.setter
-    def State(self, value) :
-        self._state = value
-
 # ============================================================================
 # ===( XAsyncTCPClient )======================================================
 # ============================================================================
@@ -157,10 +138,9 @@ class XAsyncTCPClientException(Exception) :
 
 class XAsyncTCPClient(XAsyncSocket) :
 
-    def __init__(self, asyncSocketsPool, cliSocket, srvAddr, cliAddr, recvBufSlot, sendBufSlot) :
+    def __init__(self, asyncSocketsPool, cliSocket, cliAddr, recvBufSlot, sendBufSlot) :
         try :
             super().__init__(asyncSocketsPool, cliSocket, recvBufSlot, sendBufSlot)
-            self._srvAddr          = srvAddr
             self._cliAddr          = cliAddr if cliAddr else ('0.0.0.0', 0)
             self._onFailsToConnect = None
             self._onConnected      = None
@@ -173,7 +153,6 @@ class XAsyncTCPClient(XAsyncSocket) :
             self._rdLineEncoding   = None
             self._rdBufView        = None
             self._wrBufView        = None
-            self._socketOpened     = (cliAddr is not None)
         except Exception as e:
             sys.print_exception(e)
             raise XAsyncTCPClientException('Error to creating XAsyncTCPClient, arguments are incorrects.')
@@ -282,24 +261,6 @@ class XAsyncTCPClient(XAsyncSocket) :
     # ------------------------------------------------------------------------
 
     def OnReadyForWriting(self) :
-        if not self._socketOpened :
-            if hasattr(self._socket, "getsockopt") :
-                if self._socket.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR) :
-                    self._close(XClosedReason.Error, triggerOnClosed=False)
-                    if self._onFailsToConnect :
-                        try :
-                            self._onFailsToConnect(self)
-                        except Exception as ex :
-                            raise XAsyncTCPClientException('Error when handling the "OnFailsToConnect" event : %s' % ex)
-                    return
-                self._cliAddr = self._socket.getsockname()
-                self._removeExpireTimeout()
-            self._socketOpened = True
-            if self._onConnected :
-                try :
-                    self._onConnected(self)
-                except Exception as ex :
-                    raise XAsyncTCPClientException('Error when handling the "OnConnected" event : %s' % ex)
         if self._wrBufView :
             try :
                 n = self._socket.send(self._wrBufView)
@@ -393,10 +354,6 @@ class XAsyncTCPClient(XAsyncSocket) :
     # ------------------------------------------------------------------------
 
     @property
-    def SrvAddr(self) :
-        return self._srvAddr
-
-    @property
     def CliAddr(self) :
         return self._cliAddr
 
@@ -424,20 +381,9 @@ class XAsyncTCPClient(XAsyncSocket) :
 
 class XBufferSlot :
 
-    def __init__(self, size, keepAlloc=True) :
-        self._available = True
+    def __init__(self, size) :
         self._size      = size
-        self._keepAlloc = keepAlloc
-        self._buffer    = bytearray(size) if keepAlloc else None
-
-    @property
-    def Available(self) :
-        return self._available
-    @Available.setter
-    def Available(self, value) :
-        if value and not self._keepAlloc :
-            self._buffer = None
-        self._available = value
+        self._buffer    = bytearray(size)
 
     @property
     def Size(self) :
@@ -445,9 +391,6 @@ class XBufferSlot :
 
     @property
     def Buffer(self) :
-        self._available = False
-        if self._buffer is None :
-            self._buffer = bytearray(self._size)
         return self._buffer
 
 # ============================================================================
