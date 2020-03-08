@@ -9,6 +9,7 @@ import network
 import sys
 import time
 
+from os import stat
 from socket import socket
 import select
 
@@ -132,8 +133,25 @@ class StubbedSocketPool:
             self._async_socket.OnExceptionalCondition()
 
 
-# From MicroWebSrv2.__init__
-DEFAULT_TIMEOUT = 2  # 2 seconds.
+# ----------------------------------------------------------------------
+
+# In CPython S_IFDIR etc. are available via os.stat.
+S_IFDIR = 1 << 14
+
+
+# Neither os.path nor pathlib exist in MicroPython 1.12.
+def exists(path):
+    try:
+        stat(path)
+        return True
+    except:
+        return False
+
+
+def is_dir(path):
+    return stat(path)[0] & S_IFDIR != 0
+
+# ----------------------------------------------------------------------
 
 
 class StubbedMicroServer:
@@ -142,8 +160,18 @@ class StubbedMicroServer:
     WARNING = "WARNING"
     ERROR = "ERROR"
 
+    DEFAULT_TIMEOUT = 2  # 2 seconds (originally from MicroWebSrv2.__init__).
+    DEFAULT_PAGE = "index.html"
+
+    _MIME_TYPES = {
+        "html": "text/html",
+        "css" : "text/css",
+        "js"  : "application/javascript",
+        "json": "application/json"
+    }
+
     def __init__(self, root="www"):
-        self._timeoutSec = DEFAULT_TIMEOUT
+        self._timeoutSec = StubbedMicroServer.DEFAULT_TIMEOUT
         self.AllowAllOrigins = False
         self._modules = {}
         self._root = root
@@ -155,14 +183,22 @@ class StubbedMicroServer:
     def ResolvePhysicalPath(self, url_path):
         if ".." in url_path:
             return None  # Don't allow trying to escape the root.
-        else:
-            return self._root + url_path
+
+        path = self._root + url_path
+        if path.endswith("/"):
+            path = path[:-1]
+        if not exists(path):
+            return None
+        if is_dir(path):
+            index = path + "/" + StubbedMicroServer.DEFAULT_PAGE
+            return index if exists(index) else None
+        return path if exists(path) else None
 
     def GetMimeTypeFromFilename(self, filename):
         def ext(name):
             partition = name.rpartition(".")
             return None if partition[0] == "" else partition[2].lower()
-        return "text/html"
+        return StubbedMicroServer._MIME_TYPES.get(ext(filename), None)
 
 
 micro_server = StubbedMicroServer()
@@ -183,7 +219,8 @@ while True:
             # TODO: add in time-out logic. See lines 115 and 133 onward in
             #  https://github.com/jczic/MicroWebSrv2/blob/d8663f6/MicroWebSrv2/libs/XAsyncSockets.py
             for (s, event) in poller.ipoll():
-                print_event(event)
+                if event != select.POLLIN and event != select.POLLOUT:
+                    print_event(event)
                 socket_pool.dispatch(s, event)
     except Exception as e:
         sys.print_exception(e)
