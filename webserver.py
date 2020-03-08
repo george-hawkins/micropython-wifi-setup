@@ -147,6 +147,7 @@ class StubbedMicroServer:
         self.AllowAllOrigins = False
         self._modules = {}
         self._root = root
+        self._notFoundURL = None
 
     def Log(self, msg, msg_type):
         print('MWS2-%s> %s' % (msg_type, msg))
