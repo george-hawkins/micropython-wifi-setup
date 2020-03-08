@@ -7,7 +7,6 @@ Copyright © 2019 Jean-Christophe Bos & HC² (www.hc2.fr)
 from   .libs.urlUtils import UrlUtils
 from   .webRoute import ResolveRoute
 from   .httpResponse  import HttpResponse
-from   binascii       import a2b_base64
 import json
 import sys
 
@@ -217,44 +216,6 @@ class HttpRequest :
 
     # ------------------------------------------------------------------------
 
-    def CheckBasicAuth(self, username, password) :
-        if not isinstance(username, str) :
-            raise ValueError('"username" must be a string.')
-        if not isinstance(password, str) :
-            raise ValueError('"password" must be a string.')
-        auth = self.Authorization
-        if auth :
-            try :
-                auth = auth.split()
-                if len(auth) == 2 and auth[0].lower() == 'basic' :
-                    auth = a2b_base64(auth[1].encode()).decode()
-                    auth = auth.split(':')
-                    return ( auth[0].lower() == username.lower() and \
-                             auth[1] == password )
-            except Exception as e:
-                sys.print_exception(e)
-                pass
-        return False
-
-    # ------------------------------------------------------------------------
-
-    def CheckBearerAuth(self, token) :
-        if not isinstance(token, str) :
-            raise ValueError('"token" must be a string.')
-        auth = self.Authorization
-        if auth :
-            try :
-                auth = auth.split()
-                return ( len(auth) == 2 and \
-                         auth[0].lower() == 'bearer' and \
-                         auth[1] == token )
-            except Exception as e:
-                sys.print_exception(e)
-                pass
-        return False
-
-    # ------------------------------------------------------------------------
-
     @property
     def UserAddress(self) :
         return self._xasCli.CliAddr
@@ -363,12 +324,6 @@ class HttpRequest :
     @property
     def UserAgent(self) :
         return self._headers.get('user-agent', '')
-
-    # ------------------------------------------------------------------------
-
-    @property
-    def Authorization(self) :
-        return self._headers.get('authorization', '')
 
     # ------------------------------------------------------------------------
 
