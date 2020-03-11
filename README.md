@@ -174,7 +174,7 @@ The results (prettified) are something like this:
     11
   ],
   [
-    "Sonja’s iPhone",
+    "Sonja's iPhone",
     "664de20a139f",
     6
   ],
@@ -186,3 +186,13 @@ The results (prettified) are something like this:
 There are various interesting ports of MicroPython, some of which contain, among other things, e.g. more extensive support for ESP32 features.
 
 See Adafruit's page on the "[many forks & ports of MicroPython](https://github.com/adafruit/awesome-micropythons)".
+
+---
+
+If you're posting data using `curl` you won't see the data even with `-v` as it doesn't show the body content that's sent:
+
+    $ curl -v --data 'bssid=alpha&password=beta' 192.168.0.178/authenticate
+
+If you want to see the headers _and_ body content, you have to replace `-v` with `--trace-ascii -` like so:
+
+    $ curl --trace-ascii - --data 'bssid=alpha&password=beta' 192.168.0.178/authenticate

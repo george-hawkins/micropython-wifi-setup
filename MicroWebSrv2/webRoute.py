@@ -158,13 +158,15 @@ class RouteResult :
 # ===( Methods )==============================================================
 # ============================================================================
 
-GET     = 'GET'
-HEAD    = 'HEAD'
-POST    = 'POST'
-PUT     = 'PUT'
-DELETE  = 'DELETE'
-OPTIONS = 'OPTIONS'
-PATCH   = 'PATCH'
+# MicroPython 1.12 doesn't have the enum module introduced in Python 3.4.
+class HttpMethod:
+    GET     = 'GET'
+    HEAD    = 'HEAD'
+    POST    = 'POST'
+    PUT     = 'PUT'
+    DELETE  = 'DELETE'
+    OPTIONS = 'OPTIONS'
+    PATCH   = 'PATCH'
 
 # ============================================================================
 # ===( Private registered routes  )===========================================

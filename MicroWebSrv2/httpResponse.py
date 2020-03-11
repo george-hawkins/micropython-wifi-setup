@@ -58,13 +58,15 @@ class HttpResponse :
     }
 
     _CODE_CONTENT_TMPL = """\
-    <html>
-        <head>
-            <title>MicroWebSrv2</title>
-        </head>
-        <body>
-            <h2>MicroWebSrv2 - [%(code)d] %(reason)s</h2>
-        </body>
+    <!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <title>Status code %(code)d</title>
+      </head>
+      <body>
+        <p>Status code [%(code)d] %(reason)s</p>
+      </body>
     </html>
     """
 

@@ -2,6 +2,7 @@
 # import them first before anything else starts to consume memory.
 from MicroWebSrv2.libs.XAsyncSockets import XBufferSlot, XAsyncTCPClient
 from MicroWebSrv2.httpRequest import HttpRequest
+from MicroWebSrv2.webRoute import WebRoute, HttpMethod
 
 import errno
 import btree
@@ -9,6 +10,7 @@ import network
 import sys
 import time
 
+from binascii import hexlify
 from os import stat
 from socket import socket
 import select
@@ -53,7 +55,7 @@ print("Connected to {} with address {}".format(ssid, sta.ifconfig()[0]))
 
 # ----------------------------------------------------------------------
 
-server_address = ('0.0.0.0', 80)
+server_address = ("0.0.0.0", 80)
 
 server_socket = socket()
 server_socket.bind(server_address)
@@ -63,6 +65,29 @@ server_socket.bind(server_address)
 LISTEN_MAX = 255
 
 server_socket.listen(LISTEN_MAX)
+
+# ----------------------------------------------------------------------
+
+
+@WebRoute(HttpMethod.GET, "/access-points", "Access Points")
+def request_access_points(_, request):
+    points = [(p[0], hexlify(p[1])) for p in sta.scan()]
+    request.Response.ReturnOkJSON(points)
+
+
+@WebRoute(HttpMethod.POST, "/authenticate", "Authenticate")
+def request_authenticate(_, request) :
+    data = request.GetPostedURLEncodedForm()
+    print("Data", data)
+    bssid = data.get("bssid", None)
+    password = data.get("password", None)
+    if bssid is None or password is None:
+        request.Response.ReturnBadRequest()
+    else:
+        print("BSSID", bssid)
+        print("Password", password)
+        request.Response.ReturnOk()
+
 
 # ----------------------------------------------------------------------
 
@@ -160,45 +185,46 @@ class StubbedMicroServer:
     WARNING = "WARNING"
     ERROR = "ERROR"
 
-    DEFAULT_TIMEOUT = 2  # 2 seconds (originally from MicroWebSrv2.__init__).
-    DEFAULT_PAGE = "index.html"
+    _DEFAULT_TIMEOUT = 2  # 2 seconds (originally from MicroWebSrv2.__init__).
+    _DEFAULT_PAGE = "index.html"
+    _MAX_CONTENT_LEN = 16 * 1024  # Content len from MicroWebSrv2.SetEmbeddedConfig
 
     _MIME_TYPES = {
         "html": "text/html",
         "css" : "text/css",
-        "js"  : "application/javascript",
-        "json": "application/json"
+        "js"  : "application/javascript"
     }
 
     def __init__(self, root="www"):
-        self._timeoutSec = StubbedMicroServer.DEFAULT_TIMEOUT
+        self._timeoutSec = self._DEFAULT_TIMEOUT
         self.AllowAllOrigins = False
         self._modules = {}
         self._root = root
         self._notFoundURL = None
+        self._maxContentLen = self._MAX_CONTENT_LEN
 
     def Log(self, msg, msg_type):
-        print('MWS2-%s> %s' % (msg_type, msg))
+        print("MWS2-%s> %s" % (msg_type, msg))
 
     def ResolvePhysicalPath(self, url_path):
         if ".." in url_path:
             return None  # Don't allow trying to escape the root.
 
+        if url_path.endswith("/"):
+            url_path = url_path[:-1]
         path = self._root + url_path
-        if path.endswith("/"):
-            path = path[:-1]
         if not exists(path):
             return None
-        if is_dir(path):
-            index = path + "/" + StubbedMicroServer.DEFAULT_PAGE
-            return index if exists(index) else None
-        return path if exists(path) else None
+        elif is_dir(path):
+            return self.ResolvePhysicalPath(url_path + "/" + self._DEFAULT_PAGE)
+        else:
+            return path
 
     def GetMimeTypeFromFilename(self, filename):
         def ext(name):
             partition = name.rpartition(".")
             return None if partition[0] == "" else partition[2].lower()
-        return StubbedMicroServer._MIME_TYPES.get(ext(filename), None)
+        return self._MIME_TYPES.get(ext(filename), None)
 
 
 micro_server = StubbedMicroServer()
