@@ -196,3 +196,22 @@ If you're posting data using `curl` you won't see the data even with `-v` as it 
 If you want to see the headers _and_ body content, you have to replace `-v` with `--trace-ascii -` like so:
 
     $ curl --trace-ascii - --data 'bssid=alpha&password=beta' 192.168.0.178/authenticate
+
+---
+
+In CPython objects have an associated `__dict__`. In MicroPython 1.12 this isn't available, but if you e.g. want to lookup the name of a constant value you can do:
+
+    def name(obj, value):
+        for a in dir(obj):
+            if getattr(obj, a) == value:
+                return a
+        return value
+
+    name(network, 201)
+
+Note that this code assumes that all attributes will have unique values, e.g. here that `network` only has one constant with value 201.
+
+It's probably better to filter for the names that you want:
+
+    names = [s for s in dir(network) if s.startswith("STAT_")]
+    stats = { getattr(network, k) : k for k in names }

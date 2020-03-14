@@ -46,11 +46,29 @@ if SSID not in db:
 ssid = db[SSID]
 password = db[PASSWORD]
 
+# My ESP32 takes about 2 seconds to join, so 8s is a long timeout.
+_CONNECT_TIMEOUT = 8000
+
+# I had hoped I could use wlan.status() to e.g. report if the password was wrong.
+# But with MicroPython 1.12 (and my Ubiquiti UniFi AP AC-PRO) wlan.status() doesn't prove very useful.
+# See https://forum.micropython.org/viewtopic.php?f=18&t=7942
+def sync_connect(wlan, timeout = _CONNECT_TIMEOUT):
+    start = time.ticks_ms()
+    while True:
+        if wlan.isconnected():
+            return True
+        diff = time.ticks_diff(time.ticks_ms(), start)
+        if diff > timeout:
+            wlan.disconnect()
+            return False
+
 sta = network.WLAN(network.STA_IF)
 sta.active(True)
 sta.connect(ssid, password)
-while not sta.isconnected():
-    time.sleep(1)
+
+if not sync_connect(sta):
+    raise Exception("Failed to conntect to {}. Check your password and try again.".format(ssid))
+
 print("Connected to {} with address {}".format(ssid, sta.ifconfig()[0]))
 
 # ----------------------------------------------------------------------
