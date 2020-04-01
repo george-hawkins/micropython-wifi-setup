@@ -99,33 +99,6 @@ def ResolveRoute(method, path):
 
 
 # ============================================================================
-# ===( PathFromRoute )========================================================
-# ============================================================================
-
-
-def PathFromRoute(routeName, routeArgs=None):
-    if routeArgs is None:
-        routeArgs = {}
-    if not isinstance(routeName, str) or len(routeName) == 0:
-        raise ValueError('"routeName" requires a not empty string.')
-    if not isinstance(routeArgs, dict):
-        raise ValueError('"routeArgs" must be a dict.')
-    for regRoute in _registeredRoutes:
-        if regRoute.Name == routeName:
-            path = regRoute.RoutePath
-            for argName in regRoute.ArgNames:
-                arg = routeArgs.get(argName, None)
-                if arg is None:
-                    raise ValueError(
-                        '"routeArgs" does not contains "%s" for route %s.'
-                        % (argName, routeName)
-                    )
-                path = path.replace("<%s>" % argName, str(arg))
-            return path
-    raise ValueError('"routeName" is not a registered route (%s).' % routeName)
-
-
-# ============================================================================
 # ===( RouteResult )==========================================================
 # ============================================================================
 
