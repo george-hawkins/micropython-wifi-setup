@@ -5,6 +5,8 @@ from os import stat
 import json
 import sys
 
+from slim.logger import logger
+
 # ============================================================================
 # ===( HttpResponse )=========================================================
 # ============================================================================
@@ -107,9 +109,8 @@ class HttpResponse:
             except Exception as e:
                 sys.print_exception(e)
                 self._xasCli.Close()
-                self._mws2.Log(
-                    'Stream cannot be read for request "%s".' % self._request._path,
-                    self._mws2.ERROR,
+                logger.error(
+                    'Stream cannot be read for request "%s".' % self._request._path
                 )
                 return
         if self._sendingBuf:
@@ -148,9 +149,8 @@ class HttpResponse:
                 try:
                     self._onSent(self._mws2, self)
                 except Exception as ex:
-                    self._mws2.Log(
-                        'Exception raised from "Response.OnSent" handler: %s' % ex,
-                        self._mws2.ERROR,
+                    logger.error(
+                        'Exception raised from "Response.OnSent" handler: %s' % ex
                     )
 
     # ------------------------------------------------------------------------
@@ -168,7 +168,7 @@ class HttpResponse:
 
     def _makeBaseResponseHdr(self, code):
         reason = self._RESPONSE_CODES.get(code, "Unknown reason")
-        self._mws2.Log(
+        logger.debug(
             "From %s:%s %s %s >> [%s] %s"
             % (
                 self._xasCli.CliAddr[0],
@@ -178,7 +178,6 @@ class HttpResponse:
                 code,
                 reason,
             ),
-            self._mws2.DEBUG,
         )
         if self._mws2.AllowAllOrigins:
             self._acAllowOrigin = self._request.Origin
@@ -214,9 +213,8 @@ class HttpResponse:
         if not isinstance(upgrade, str) or len(upgrade) == 0:
             raise ValueError('"upgrade" must be a not empty string.')
         if self._hdrSent:
-            self._mws2.Log(
-                'Response headers already sent for request "%s".' % self._request._path,
-                self._mws2.WARNING,
+            logger.warning(
+                'Response headers already sent for request "%s".' % self._request._path
             )
             return
         self.SetHeader("Connection", "Upgrade")
@@ -233,9 +231,8 @@ class HttpResponse:
         if not hasattr(stream, "readinto") or not hasattr(stream, "close"):
             raise ValueError('"stream" must be a readable buffer protocol object.')
         if self._hdrSent:
-            self._mws2.Log(
-                'Response headers already sent for request "%s".' % self._request._path,
-                self._mws2.WARNING,
+            logger.warning(
+                'Response headers already sent for request "%s".' % self._request._path
             )
             try:
                 stream.close()
@@ -265,9 +262,8 @@ class HttpResponse:
         if not isinstance(code, int) or code <= 0:
             raise ValueError('"code" must be a positive integer.')
         if self._hdrSent:
-            self._mws2.Log(
-                'Response headers already sent for request "%s".' % self._request._path,
-                self._mws2.WARNING,
+            logger.warning(
+                'Response headers already sent for request "%s".' % self._request._path
             )
             return
         if not content:

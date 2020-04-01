@@ -1,8 +1,9 @@
 # The compiler needs a lot of space to process XAsyncSockets etc. so
 # import them first before anything else starts to consume memory.
-from MicroWebSrv2.libs.XAsyncSockets import XBufferSlot, XAsyncTCPClient
-from MicroWebSrv2.httpRequest import HttpRequest
-from MicroWebSrv2.webRoute import WebRoute, HttpMethod, ResolveRoute
+from slim.MicroWebSrv2.libs.XAsyncSockets import XBufferSlot, XAsyncTCPClient
+from slim.MicroWebSrv2.httpRequest import HttpRequest
+from slim.MicroWebSrv2.webRoute import WebRoute, HttpMethod, ResolveRoute
+from slim.logger import logger
 
 import errno
 import btree
@@ -213,11 +214,6 @@ def is_dir(path):
 
 
 class StubbedMicroServer:
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    WARNING = "WARNING"
-    ERROR = "ERROR"
-
     _DEFAULT_TIMEOUT = 2  # 2 seconds (originally from MicroWebSrv2.__init__).
     _MAX_CONTENT_LEN = 16 * 1024  # Content len from MicroWebSrv2.SetEmbeddedConfig
 
@@ -232,9 +228,6 @@ class StubbedMicroServer:
 
     def add_module(self, name, instance):
         self._modules[name] = instance
-
-    def Log(self, msg, msg_type):
-        print("MWS2-%s> %s" % (msg_type, msg))
 
 
 class FileserverModule:
@@ -306,9 +299,8 @@ class WebRoutesModule:
                     request.async_data_recv(size=cnt_len, on_content_recv=route_request)
                     return RESPONSE_PENDING
                 except:
-                    mws2.Log(
-                        "Not enough memory to read a content of %s bytes." % cnt_len,
-                        mws2.ERROR,
+                    logger.error(
+                        "Not enough memory to read a content of %s bytes." % cnt_len
                     )
                     request.Response.ReturnServiceUnavailable()
             else:
@@ -323,15 +315,12 @@ class WebRoutesModule:
             else:
                 route_result.Handler(mws2, request)
             if not request.Response.HeadersSent:
-                mws2.Log(
-                    "No response was sent from route %s." % route_result, mws2.WARNING
-                )
+                logger.warning("No response was sent from route %s." % route_result)
                 request.Response.ReturnNotImplemented()
         except Exception as ex:
-            mws2.Log(
-                "Exception raised from route %s: %s" % (route_result, ex), mws2.ERROR
-            )
+            logger.error("Exception raised from route %s: %s" % (route_result, ex))
             request.Response.ReturnInternalServerError()
+
 
 class OptionsModule:
     def OnRequest(self, mws2, request):
@@ -341,9 +330,7 @@ class OptionsModule:
         if mws2.CORSAllowAll:
             request.Response.SetHeader("Access-Control-Allow-Methods", "*")
             request.Response.SetHeader("Access-Control-Allow-Headers", "*")
-            request.Response.SetHeader(
-                "Access-Control-Allow-Credentials", "true"
-            )
+            request.Response.SetHeader("Access-Control-Allow-Credentials", "true")
             request.Response.SetHeader("Access-Control-Max-Age", "86400")
         request.Response.ReturnOk()
 
@@ -358,13 +345,11 @@ def process_request_modules(mws2, request):
             if r is RESPONSE_PENDING or request.Response.HeadersSent:
                 return
         except Exception as ex:
-            mws2.Log(
-                'Exception in request handler of module "%s" (%s).' % (modName, ex),
-                mws2.ERROR,
+            logger.error(
+                'Exception in request handler of module "%s" (%s).' % (modName, ex)
             )
 
     request.Response.ReturnNotImplemented()
-
 
 
 micro_server = StubbedMicroServer()
@@ -386,7 +371,9 @@ while True:
         tcp_client = XAsyncTCPClient(
             socket_pool, client_socket, client_address, recv_buf_slot, send_buf_slot
         )
-        request = HttpRequest(micro_server, tcp_client, process_request=process_request_modules)
+        request = HttpRequest(
+            micro_server, tcp_client, process_request=process_request_modules
+        )
         while socket_pool.has_async_socket():
             # TODO: add in time-out logic. See lines 115 and 133 onward in
             #  https://github.com/jczic/MicroWebSrv2/blob/d8663f6/MicroWebSrv2/libs/XAsyncSockets.py
