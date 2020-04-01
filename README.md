@@ -215,3 +215,31 @@ It's probably better to filter for the names that you want:
 
     names = [s for s in dir(network) if s.startswith("STAT_")]
     stats = { getattr(network, k) : k for k in names }
+
+---
+
+MicroPython `sys.print_exception(e)` is equivalent to CPython `traceback.print_exception(e.__class__, e, e.__traceback__)`.
+
+---
+
+I set the project to use the python interpreter from my venv - Settings / Project:my-project-name / Project Interpreter - clicked cog and select _Add_, it automatically selected _Existing environment_ and the interpreter in my venv - so I just had to press OK.
+
+---
+
+PyCharm MicroPython plugin
+--------------------------
+
+Setup:
+
+* Settings / Plugins - added MicroPython plugin.
+* Settings / Languages & Frameworks - ticked _Enable MicroPython support_, set device as ESP8266 (ESP32 isn't an option) and manually set _Device path_ (as _Detect_ didn't work) to `/devcp2104`.
+
+However this doesn't get you very far - for autocompletion and knowing what methods are available it depends on https://github.com/vlasovskikh/intellij-micropython/tree/master/typehints
+
+The type hints haven't been updated in 2 years and were never very extensive, e.g. the only `stdlib` module it has hints for is `utime`.
+
+So it doesn't know about `sys.print_exception` and other MicroPython specific functions.
+
+Note: `vlasovskikh` is Andrey Vlasovskikh - he is the technical lead on PyCharm.
+
+In the end, I uninstalled the plugin - the other features it offered seemed little more convenient than using `rshell`.
