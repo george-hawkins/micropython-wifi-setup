@@ -331,7 +331,7 @@ class HttpResponse:
             cd = 'attachment; filename="%s"' % attachmentName.replace('"', "'")
             self.SetHeader("Content-Disposition", cd)
         if not self._contentType:
-            self._contentType = self._mws2.GetMimeTypeFromFilename(filename)
+            raise ValueError('"ContentType" must be set')
         self._contentLength = size
         self.ReturnStream(200, file)
 

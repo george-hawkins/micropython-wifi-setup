@@ -90,19 +90,7 @@ class HttpRequest:
         if not self._processRequestModules():
             if not self.IsUpgrade:
                 if not self._processRequestRoutes():
-                    if self._method in ("GET", "HEAD"):
-                        filename = self._mws2.ResolvePhysicalPath(self._path)
-                        if filename:
-                            ct = self._mws2.GetMimeTypeFromFilename(filename)
-                            if ct:
-                                self._response.AllowCaching = True
-                                self._response.ContentType = ct
-                                self._response.ReturnFile(filename)
-                            else:
-                                self._response.ReturnForbidden()
-                        else:
-                            self._response.ReturnNotFound()
-                    elif self._method == "OPTIONS":
+                    if self._method == "OPTIONS":
                         if self._mws2.CORSAllowAll:
                             self._response.SetHeader(
                                 "Access-Control-Allow-Methods", "*"

@@ -204,8 +204,24 @@ class StubbedMicroServer:
     ERROR = "ERROR"
 
     _DEFAULT_TIMEOUT = 2  # 2 seconds (originally from MicroWebSrv2.__init__).
-    _DEFAULT_PAGE = "index.html"
     _MAX_CONTENT_LEN = 16 * 1024  # Content len from MicroWebSrv2.SetEmbeddedConfig
+
+    def __init__(self):
+        self._timeoutSec = self._DEFAULT_TIMEOUT
+        self.AllowAllOrigins = False
+        self._modules = {}
+        self._notFoundURL = None
+        self._maxContentLen = self._MAX_CONTENT_LEN
+
+    def add_module(self, name, instance):
+        self._modules[name] = instance
+
+    def Log(self, msg, msg_type):
+        print("MWS2-%s> %s" % (msg_type, msg))
+
+
+class FileserverModule:
+    _DEFAULT_PAGE = "index.html"
 
     _MIME_TYPES = {
         "html": "text/html",
@@ -214,31 +230,37 @@ class StubbedMicroServer:
     }
 
     def __init__(self, root="www"):
-        self._timeoutSec = self._DEFAULT_TIMEOUT
-        self.AllowAllOrigins = False
-        self._modules = {}
         self._root = root
-        self._notFoundURL = None
-        self._maxContentLen = self._MAX_CONTENT_LEN
 
-    def Log(self, msg, msg_type):
-        print("MWS2-%s> %s" % (msg_type, msg))
+    def OnRequest(self, _, request):
+        if request.IsUpgrade or request.Method not in ("GET", "HEAD"):
+            return
 
-    def ResolvePhysicalPath(self, url_path):
+        filename = self._resolve_physical_path(request.Path)
+        if filename:
+            ct = self._get_mime_type_from_filename(filename)
+            if ct:
+                request.Response.AllowCaching = True
+                request.Response.ContentType = ct
+                request.Response.ReturnFile(filename)
+            else:
+                request.Response.ReturnForbidden()
+        else:
+            request.Response.ReturnNotFound()
+
+    def _resolve_physical_path(self, url_path):
         if ".." in url_path:
             return None  # Don't allow trying to escape the root.
 
         if url_path.endswith("/"):
             url_path = url_path[:-1]
         path = self._root + url_path
-        if not exists(path):
-            return None
-        elif is_dir(path):
-            return self.ResolvePhysicalPath(url_path + "/" + self._DEFAULT_PAGE)
-        else:
-            return path
+        if exists(path) and is_dir(path):
+            path = path + "/" + self._DEFAULT_PAGE
 
-    def GetMimeTypeFromFilename(self, filename):
+        return path if exists(path) else None
+
+    def _get_mime_type_from_filename(self, filename):
         def ext(name):
             partition = name.rpartition(".")
             return None if partition[0] == "" else partition[2].lower()
@@ -247,6 +269,8 @@ class StubbedMicroServer:
 
 micro_server = StubbedMicroServer()
 socket_pool = StubbedSocketPool(poller)
+
+micro_server.add_module('fileserver', FileserverModule())
 
 # Slot size from MicroWebSrv2.SetEmbeddedConfig.
 SLOT_SIZE = 1024
