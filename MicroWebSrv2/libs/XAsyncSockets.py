@@ -1,7 +1,5 @@
-"""
-The MIT License (MIT)
-Copyright © 2019 Jean-Christophe Bos & HC² (www.hc2.fr)
-"""
+# The MIT License (MIT)
+# Copyright 2019 Jean-Christophe Bos & HC2 (www.hc2.fr)
 
 
 import socket
