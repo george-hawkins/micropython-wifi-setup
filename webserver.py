@@ -2,7 +2,7 @@
 # import them first before anything else starts to consume memory.
 from MicroWebSrv2.libs.XAsyncSockets import XBufferSlot, XAsyncTCPClient
 from MicroWebSrv2.httpRequest import HttpRequest
-from MicroWebSrv2.webRoute import WebRoute, HttpMethod
+from MicroWebSrv2.webRoute import WebRoute, HttpMethod, ResolveRoute
 
 import errno
 import btree
@@ -120,8 +120,13 @@ pollEvents = {
 
 
 def print_event(event):
-    s = pollEvents.get(event, event)
-    print("Event", s)
+    mask = 1
+    while event:
+        if event & 1:
+            print("Event", pollEvents.get(mask, mask))
+        event >>= 1
+        mask <<= 1
+
 
 # ----------------------------------------------------------------------
 
@@ -168,11 +173,16 @@ class StubbedSocketPool:
         if s != self._async_socket.GetSocketObj():
             return
 
-        if event == select.POLLIN:
+        if event & select.POLLIN:
+            event &= ~select.POLLIN
             self._async_socket.OnReadyForReading()
-        elif event == select.POLLOUT:
+
+        if event & select.POLLOUT:
+            event &= ~select.POLLOUT
             self._async_socket.OnReadyForWriting()
-        else:
+
+        # If there are still bits left in event...
+        if event:
             self._async_socket.OnExceptionalCondition()
 
 
@@ -267,10 +277,61 @@ class FileserverModule:
         return self._MIME_TYPES.get(ext(filename), None)
 
 
+class WebRoutesModule:
+    def OnRequest(self, mws2, request):
+        if request.IsUpgrade:
+            return
+
+        route_result = ResolveRoute(request.Method, request.Path)
+        if not route_result:
+            return
+
+        def route_request():
+            self._route_request(mws2, request, route_result)
+
+        cnt_len = request.ContentLength
+        if not cnt_len:
+            route_request()
+        elif request.Method not in ("GET", "HEAD"):
+            if cnt_len <= mws2._maxContentLen:
+                try:
+                    request.async_data_recv(size=cnt_len, on_content_recv=route_request)
+                    return request.RESPONSE_PENDING
+                except:
+                    mws2.Log(
+                        "Not enough memory to read a content of %s bytes." % cnt_len,
+                        mws2.ERROR
+                    )
+                    request.Response.ReturnServiceUnavailable()
+            else:
+                request.Response.ReturnEntityTooLarge()
+        else:
+            request.Response.ReturnBadRequest()
+
+    def _route_request(self, mws2, request, route_result):
+        try:
+            if route_result.Args:
+                route_result.Handler(mws2, request, route_result.Args)
+            else:
+                route_result.Handler(mws2, request)
+            if not request.Response.HeadersSent:
+                mws2.Log(
+                    "No response was sent from route %s." % route_result,
+                    mws2.WARNING
+                )
+                request.Response.ReturnNotImplemented()
+        except Exception as ex:
+            mws2.Log(
+                "Exception raised from route %s: %s" % (route_result, ex),
+                mws2.ERROR
+            )
+            request.Response.ReturnInternalServerError()
+
 micro_server = StubbedMicroServer()
 socket_pool = StubbedSocketPool(poller)
 
 micro_server.add_module('fileserver', FileserverModule())
+micro_server.add_module('webroute', WebRoutesModule())
 
 # Slot size from MicroWebSrv2.SetEmbeddedConfig.
 SLOT_SIZE = 1024
@@ -287,7 +348,8 @@ while True:
             # TODO: add in time-out logic. See lines 115 and 133 onward in
             #  https://github.com/jczic/MicroWebSrv2/blob/d8663f6/MicroWebSrv2/libs/XAsyncSockets.py
             for (s, event) in poller.ipoll():
-                if event != select.POLLIN and event != select.POLLOUT:
+                # If event has bits other than POLLIN or POLLOUT then print it.
+                if event & ~(select.POLLIN | select.POLLOUT):
                     print_event(event)
                 socket_pool.dispatch(s, event)
     except Exception as e:

@@ -16,6 +16,8 @@ class HttpRequest:
 
     MAX_RECV_HEADER_LINES = 100
 
+    RESPONSE_PENDING = object()
+
     # ------------------------------------------------------------------------
 
     def __init__(self, microWebSrv2, xasCli):
@@ -89,22 +91,21 @@ class HttpRequest:
     def _processRequest(self):
         if not self._processRequestModules():
             if not self.IsUpgrade:
-                if not self._processRequestRoutes():
-                    if self._method == "OPTIONS":
-                        if self._mws2.CORSAllowAll:
-                            self._response.SetHeader(
-                                "Access-Control-Allow-Methods", "*"
-                            )
-                            self._response.SetHeader(
-                                "Access-Control-Allow-Headers", "*"
-                            )
-                            self._response.SetHeader(
-                                "Access-Control-Allow-Credentials", "true"
-                            )
-                            self._response.SetHeader("Access-Control-Max-Age", "86400")
-                        self._response.ReturnOk()
-                    else:
-                        self._response.ReturnMethodNotAllowed()
+                if self._method == "OPTIONS":
+                    if self._mws2.CORSAllowAll:
+                        self._response.SetHeader(
+                            "Access-Control-Allow-Methods", "*"
+                        )
+                        self._response.SetHeader(
+                            "Access-Control-Allow-Headers", "*"
+                        )
+                        self._response.SetHeader(
+                            "Access-Control-Allow-Credentials", "true"
+                        )
+                        self._response.SetHeader("Access-Control-Max-Age", "86400")
+                    self._response.ReturnOk()
+                else:
+                    self._response.ReturnMethodNotAllowed()
             else:
                 self._response.ReturnNotImplemented()
 
@@ -113,8 +114,8 @@ class HttpRequest:
     def _processRequestModules(self):
         for modName, modInstance in self._mws2._modules.items():
             try:
-                modInstance.OnRequest(self._mws2, self)
-                if self._response.HeadersSent:
+                r = modInstance.OnRequest(self._mws2, self)
+                if r is self.RESPONSE_PENDING or self._response.HeadersSent:
                     return True
             except Exception as ex:
                 self._mws2.Log(
@@ -125,59 +126,17 @@ class HttpRequest:
 
     # ------------------------------------------------------------------------
 
-    def _processRequestRoutes(self):
-        self._routeResult = ResolveRoute(self._method, self._path)
-        if self._routeResult:
-            cntLen = self.ContentLength
-            if not cntLen:
-                self._routeRequest()
-            elif self._method != "GET" and self._method != "HEAD":
-                if cntLen <= self._mws2._maxContentLen:
+    def async_data_recv(self, size, on_content_recv):
+        def _on_content_recv(xasCli, content, arg):
+            self._content = content
+            on_content_recv()
+            self._content = None
 
-                    def onContentRecv(xasCli, content, arg):
-                        self._content = content
-                        self._routeRequest()
-                        self._content = None
-
-                    try:
-                        self._xasCli.AsyncRecvData(
-                            size=cntLen,
-                            onDataRecv=onContentRecv,
-                            timeoutSec=self._mws2._timeoutSec,
-                        )
-                    except:
-                        self._mws2.Log(
-                            "Not enough memory to read a content of %s bytes." % cntLen,
-                            self._mws2.ERROR,
-                        )
-                        self._response.ReturnServiceUnavailable()
-                else:
-                    self._response.ReturnEntityTooLarge()
-            else:
-                self._response.ReturnBadRequest()
-            return True
-        return False
-
-    # ------------------------------------------------------------------------
-
-    def _routeRequest(self):
-        try:
-            if self._routeResult.Args:
-                self._routeResult.Handler(self._mws2, self, self._routeResult.Args)
-            else:
-                self._routeResult.Handler(self._mws2, self)
-            if not self._response.HeadersSent:
-                self._mws2.Log(
-                    "No response was sent from route %s." % self._routeResult,
-                    self._mws2.WARNING,
-                )
-                self._response.ReturnNotImplemented()
-        except Exception as ex:
-            self._mws2.Log(
-                "Exception raised from route %s: %s" % (self._routeResult, ex),
-                self._mws2.ERROR,
-            )
-            self._response.ReturnInternalServerError()
+        self._xasCli.AsyncRecvData(
+            size=size,
+            onDataRecv=_on_content_recv,
+            timeoutSec=self._mws2._timeoutSec
+        )
 
     # ------------------------------------------------------------------------
 
