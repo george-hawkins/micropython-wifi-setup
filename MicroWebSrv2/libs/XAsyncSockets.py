@@ -2,7 +2,6 @@
 # Copyright 2019 Jean-Christophe Bos & HC2 (www.hc2.fr)
 
 
-import socket
 import sys
 
 try:
@@ -238,7 +237,7 @@ class XAsyncTCPClient(XAsyncSocket):
                         return
             elif self._sizeToRecv:
                 # In the context of reading data,
-                recvBuf = self._rdBufView[-self._sizeToRecv :]
+                recvBuf = self._rdBufView[-self._sizeToRecv:]
                 try:
                     try:
                         n = self._socket.recv_into(recvBuf)

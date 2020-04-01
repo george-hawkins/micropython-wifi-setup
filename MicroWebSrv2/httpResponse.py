@@ -480,7 +480,7 @@ class HttpResponse:
 
     @OnSent.setter
     def OnSent(self, value):
-        if type(value) is not type(lambda x: x):
+        if not isinstance(value, type(lambda: None)):
             raise ValueError('"OnSent" must be a function.')
         self._onSent = value
 

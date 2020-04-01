@@ -11,7 +11,7 @@ import sys
 
 def WebRoute(method=None, routePath=None, name=None):
 
-    if type(method) is type(lambda x: x) and not routePath:
+    if not method or not routePath:
         raise ValueError("[@WebRoute] arguments are required for this decorator.")
 
     def decorated(handler):
@@ -29,7 +29,7 @@ def WebRoute(method=None, routePath=None, name=None):
 
 
 def RegisterRoute(handler, method, routePath, name=None):
-    if type(handler) is not type(lambda x: x):
+    if not isinstance(handler, type(lambda: None)):
         raise ValueError('"handler" must be a function.')
     if not isinstance(method, str) or len(method) == 0:
         raise ValueError('"method" requires a not empty string.')
