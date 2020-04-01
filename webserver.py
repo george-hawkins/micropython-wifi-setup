@@ -52,7 +52,7 @@ _CONNECT_TIMEOUT = 8000
 # I had hoped I could use wlan.status() to e.g. report if the password was wrong.
 # But with MicroPython 1.12 (and my Ubiquiti UniFi AP AC-PRO) wlan.status() doesn't prove very useful.
 # See https://forum.micropython.org/viewtopic.php?f=18&t=7942
-def sync_connect(wlan, timeout = _CONNECT_TIMEOUT):
+def sync_connect(wlan, timeout=_CONNECT_TIMEOUT):
     start = time.ticks_ms()
     while True:
         if wlan.isconnected():
@@ -62,12 +62,15 @@ def sync_connect(wlan, timeout = _CONNECT_TIMEOUT):
             wlan.disconnect()
             return False
 
+
 sta = network.WLAN(network.STA_IF)
 sta.active(True)
 sta.connect(ssid, password)
 
 if not sync_connect(sta):
-    raise Exception("Failed to conntect to {}. Check your password and try again.".format(ssid))
+    raise Exception(
+        "Failed to conntect to {}. Check your password and try again.".format(ssid)
+    )
 
 print("Connected to {} with address {}".format(ssid, sta.ifconfig()[0]))
 
@@ -94,7 +97,7 @@ def request_access_points(_, request):
 
 
 @WebRoute(HttpMethod.POST, "/authenticate", "Authenticate")
-def request_authenticate(_, request) :
+def request_authenticate(_, request):
     data = request.GetPostedURLEncodedForm()
     print("Data", data)
     bssid = data.get("bssid", None)
@@ -115,7 +118,7 @@ pollEvents = {
     select.POLLIN: "IN",
     select.POLLOUT: "OUT",
     select.POLLHUP: "HUP",
-    select.POLLERR: "ERR"
+    select.POLLERR: "ERR",
 }
 
 
@@ -204,6 +207,7 @@ def exists(path):
 def is_dir(path):
     return stat(path)[0] & S_IFDIR != 0
 
+
 # ----------------------------------------------------------------------
 
 
@@ -235,8 +239,8 @@ class FileserverModule:
 
     _MIME_TYPES = {
         "html": "text/html",
-        "css" : "text/css",
-        "js"  : "application/javascript"
+        "css": "text/css",
+        "js": "application/javascript",
     }
 
     def __init__(self, root="www"):
@@ -274,6 +278,7 @@ class FileserverModule:
         def ext(name):
             partition = name.rpartition(".")
             return None if partition[0] == "" else partition[2].lower()
+
         return self._MIME_TYPES.get(ext(filename), None)
 
 
@@ -300,7 +305,7 @@ class WebRoutesModule:
                 except:
                     mws2.Log(
                         "Not enough memory to read a content of %s bytes." % cnt_len,
-                        mws2.ERROR
+                        mws2.ERROR,
                     )
                     request.Response.ReturnServiceUnavailable()
             else:
@@ -316,22 +321,21 @@ class WebRoutesModule:
                 route_result.Handler(mws2, request)
             if not request.Response.HeadersSent:
                 mws2.Log(
-                    "No response was sent from route %s." % route_result,
-                    mws2.WARNING
+                    "No response was sent from route %s." % route_result, mws2.WARNING
                 )
                 request.Response.ReturnNotImplemented()
         except Exception as ex:
             mws2.Log(
-                "Exception raised from route %s: %s" % (route_result, ex),
-                mws2.ERROR
+                "Exception raised from route %s: %s" % (route_result, ex), mws2.ERROR
             )
             request.Response.ReturnInternalServerError()
+
 
 micro_server = StubbedMicroServer()
 socket_pool = StubbedSocketPool(poller)
 
-micro_server.add_module('fileserver', FileserverModule())
-micro_server.add_module('webroute', WebRoutesModule())
+micro_server.add_module("fileserver", FileserverModule())
+micro_server.add_module("webroute", WebRoutesModule())
 
 # Slot size from MicroWebSrv2.SetEmbeddedConfig.
 SLOT_SIZE = 1024
@@ -342,7 +346,9 @@ send_buf_slot = XBufferSlot(SLOT_SIZE)
 while True:
     client_socket, client_address = server_socket.accept()
     try:
-        tcp_client = XAsyncTCPClient(socket_pool, client_socket, client_address, recv_buf_slot, send_buf_slot)
+        tcp_client = XAsyncTCPClient(
+            socket_pool, client_socket, client_address, recv_buf_slot, send_buf_slot
+        )
         request = HttpRequest(micro_server, tcp_client)
         while socket_pool.has_async_socket():
             # TODO: add in time-out logic. See lines 115 and 133 onward in

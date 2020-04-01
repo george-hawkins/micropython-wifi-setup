@@ -2,7 +2,6 @@
 # Copyright 2019 Jean-Christophe Bos & HC2 (www.hc2.fr)
 
 from .libs.urlUtils import UrlUtils
-from .webRoute import ResolveRoute
 from .httpResponse import HttpResponse
 import json
 import sys
@@ -93,12 +92,8 @@ class HttpRequest:
             if not self.IsUpgrade:
                 if self._method == "OPTIONS":
                     if self._mws2.CORSAllowAll:
-                        self._response.SetHeader(
-                            "Access-Control-Allow-Methods", "*"
-                        )
-                        self._response.SetHeader(
-                            "Access-Control-Allow-Headers", "*"
-                        )
+                        self._response.SetHeader("Access-Control-Allow-Methods", "*")
+                        self._response.SetHeader("Access-Control-Allow-Headers", "*")
                         self._response.SetHeader(
                             "Access-Control-Allow-Credentials", "true"
                         )
@@ -133,9 +128,7 @@ class HttpRequest:
             self._content = None
 
         self._xasCli.AsyncRecvData(
-            size=size,
-            onDataRecv=_on_content_recv,
-            timeoutSec=self._mws2._timeoutSec
+            size=size, onDataRecv=_on_content_recv, timeoutSec=self._mws2._timeoutSec
         )
 
     # ------------------------------------------------------------------------
