@@ -9,11 +9,12 @@ import btree
 import network
 import sys
 import time
+import select
 
 from binascii import hexlify
 from os import stat
 from socket import socket
-import select
+from collections import OrderedDict
 
 
 # Open or create a file in binary mode for updating.
@@ -223,7 +224,9 @@ class StubbedMicroServer:
     def __init__(self):
         self._timeoutSec = self._DEFAULT_TIMEOUT
         self.AllowAllOrigins = False
-        self._modules = {}
+        self.CORSAllowAll = False
+        # Modules should be processed in the order that they're added so use OrderedDict.
+        self._modules = OrderedDict()
         self._notFoundURL = None
         self._maxContentLen = self._MAX_CONTENT_LEN
 
@@ -301,7 +304,7 @@ class WebRoutesModule:
             if cnt_len <= mws2._maxContentLen:
                 try:
                     request.async_data_recv(size=cnt_len, on_content_recv=route_request)
-                    return request.RESPONSE_PENDING
+                    return RESPONSE_PENDING
                 except:
                     mws2.Log(
                         "Not enough memory to read a content of %s bytes." % cnt_len,
@@ -330,12 +333,46 @@ class WebRoutesModule:
             )
             request.Response.ReturnInternalServerError()
 
+class OptionsModule:
+    def OnRequest(self, mws2, request):
+        if request.IsUpgrade or request.Method != "OPTIONS":
+            return
+
+        if mws2.CORSAllowAll:
+            request.Response.SetHeader("Access-Control-Allow-Methods", "*")
+            request.Response.SetHeader("Access-Control-Allow-Headers", "*")
+            request.Response.SetHeader(
+                "Access-Control-Allow-Credentials", "true"
+            )
+            request.Response.SetHeader("Access-Control-Max-Age", "86400")
+        request.Response.ReturnOk()
+
+
+RESPONSE_PENDING = object()
+
+
+def process_request_modules(mws2, request):
+    for modName, modInstance in mws2._modules.items():
+        try:
+            r = modInstance.OnRequest(mws2, request)
+            if r is RESPONSE_PENDING or request.Response.HeadersSent:
+                return
+        except Exception as ex:
+            mws2.Log(
+                'Exception in request handler of module "%s" (%s).' % (modName, ex),
+                mws2.ERROR,
+            )
+
+    request.Response.ReturnNotImplemented()
+
+
 
 micro_server = StubbedMicroServer()
 socket_pool = StubbedSocketPool(poller)
 
-micro_server.add_module("fileserver", FileserverModule())
 micro_server.add_module("webroute", WebRoutesModule())
+micro_server.add_module("fileserver", FileserverModule())
+micro_server.add_module("options", OptionsModule())
 
 # Slot size from MicroWebSrv2.SetEmbeddedConfig.
 SLOT_SIZE = 1024
@@ -349,7 +386,7 @@ while True:
         tcp_client = XAsyncTCPClient(
             socket_pool, client_socket, client_address, recv_buf_slot, send_buf_slot
         )
-        request = HttpRequest(micro_server, tcp_client)
+        request = HttpRequest(micro_server, tcp_client, process_request=process_request_modules)
         while socket_pool.has_async_socket():
             # TODO: add in time-out logic. See lines 115 and 133 onward in
             #  https://github.com/jczic/MicroWebSrv2/blob/d8663f6/MicroWebSrv2/libs/XAsyncSockets.py

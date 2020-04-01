@@ -15,13 +15,12 @@ class HttpRequest:
 
     MAX_RECV_HEADER_LINES = 100
 
-    RESPONSE_PENDING = object()
-
     # ------------------------------------------------------------------------
 
-    def __init__(self, microWebSrv2, xasCli):
+    def __init__(self, microWebSrv2, xasCli, process_request):
         self._mws2 = microWebSrv2
         self._xasCli = xasCli
+        self._process_request = process_request
         self._waitForRecvRequest()
 
     # ------------------------------------------------------------------------
@@ -78,46 +77,12 @@ class HttpRequest:
                 else:
                     self._response.ReturnEntityTooLarge()
             elif len(elements) == 1 and len(elements[0]) == 0:
-                self._processRequest()
+                self._process_request(self._mws2, self)
             else:
                 self._response.ReturnBadRequest()
         except Exception as e:
             sys.print_exception(e)
             self._response.ReturnBadRequest()
-
-    # ------------------------------------------------------------------------
-
-    def _processRequest(self):
-        if not self._processRequestModules():
-            if not self.IsUpgrade:
-                if self._method == "OPTIONS":
-                    if self._mws2.CORSAllowAll:
-                        self._response.SetHeader("Access-Control-Allow-Methods", "*")
-                        self._response.SetHeader("Access-Control-Allow-Headers", "*")
-                        self._response.SetHeader(
-                            "Access-Control-Allow-Credentials", "true"
-                        )
-                        self._response.SetHeader("Access-Control-Max-Age", "86400")
-                    self._response.ReturnOk()
-                else:
-                    self._response.ReturnMethodNotAllowed()
-            else:
-                self._response.ReturnNotImplemented()
-
-    # ------------------------------------------------------------------------
-
-    def _processRequestModules(self):
-        for modName, modInstance in self._mws2._modules.items():
-            try:
-                r = modInstance.OnRequest(self._mws2, self)
-                if r is self.RESPONSE_PENDING or self._response.HeadersSent:
-                    return True
-            except Exception as ex:
-                self._mws2.Log(
-                    'Exception in request handler of module "%s" (%s).' % (modName, ex),
-                    self._mws2.ERROR,
-                )
-        return False
 
     # ------------------------------------------------------------------------
 
