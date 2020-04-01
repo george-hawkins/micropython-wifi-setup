@@ -91,12 +91,10 @@ def ResolveRoute(method, path):
                             argValue = int(argValue)
                         except Exception as e:
                             sys.print_exception(e)
-                            pass
                         args[argName] = argValue
                     return RouteResult(regRoute, args)
     except Exception as e:
         sys.print_exception(e)
-        pass
     return None
 
 

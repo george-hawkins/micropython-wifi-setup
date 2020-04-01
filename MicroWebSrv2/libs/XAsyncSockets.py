@@ -20,7 +20,6 @@ except:
 
 
 class XClosedReason:
-
     Error = 0x00
     ClosedByHost = 0x01
     ClosedByPeer = 0x02
@@ -84,7 +83,6 @@ class XAsyncSocket:
                 self._socket.close()
             except Exception as e:
                 sys.print_exception(e)
-                pass
             self._socket = None
             if self._recvBufSlot is not None:
                 self._recvBufSlot = None
@@ -179,7 +177,6 @@ class XAsyncTCPClient(XAsyncSocket):
                 self._socket.send(self._wrBufView)
             except Exception as e:
                 sys.print_exception(e)
-                pass
         return self._close(XClosedReason.ClosedByHost)
 
     # ------------------------------------------------------------------------
@@ -359,7 +356,6 @@ class XAsyncTCPClient(XAsyncSocket):
                     return True
             except Exception as e:
                 sys.print_exception(e)
-                pass
             raise XAsyncTCPClientException('AsyncSendData : "data" is incorrect.')
         return False
 

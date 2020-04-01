@@ -161,7 +161,6 @@ class HttpResponse:
                 self._stream.close()
             except Exception as e:
                 sys.print_exception(e)
-                pass
             self._stream = None
         self._sendingBuf = None
 
@@ -242,7 +241,6 @@ class HttpResponse:
                 stream.close()
             except Exception as e:
                 sys.print_exception(e)
-                pass
             return
         if self._request._method != "HEAD":
             self._stream = stream
@@ -253,7 +251,6 @@ class HttpResponse:
                 stream.close()
             except Exception as e:
                 sys.print_exception(e)
-                pass
         if not self._contentType:
             self._contentType = "application/octet-stream"
         if not self._contentLength:

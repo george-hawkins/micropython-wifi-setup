@@ -205,7 +205,6 @@ class HttpRequest:
                         res[UrlUtils.UnquotePlus(p[0])] = v
             except Exception as e:
                 sys.print_exception(e)
-                pass
         return res
 
     # ------------------------------------------------------------------------
@@ -217,7 +216,6 @@ class HttpRequest:
                 return json.loads(s)
             except Exception as e:
                 sys.print_exception(e)
-                pass
         return None
 
     # ------------------------------------------------------------------------
