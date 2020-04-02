@@ -5,8 +5,6 @@ from os import stat
 import json
 import sys
 
-from slim.logger import logger
-
 # ============================================================================
 # ===( HttpResponse )=========================================================
 # ============================================================================
@@ -72,10 +70,14 @@ class HttpResponse:
 
     # ------------------------------------------------------------------------
 
-    def __init__(self, microWebSrv2, request):
-        self._mws2 = microWebSrv2
+    def __init__(self, config, request):
+        self._not_found_url = config.not_found_url
+        self._allow_all_origins = config.allow_all_origins
+        self._logger = config.logger
+
         self._request = request
         self._xasCli = request.XAsyncTCPClient
+
         self._headers = {}
         self._allowCaching = False
         self._acAllowOrigin = None
@@ -109,7 +111,7 @@ class HttpResponse:
             except Exception as e:
                 sys.print_exception(e)
                 self._xasCli.Close()
-                logger.error(
+                self._logger.error(
                     'Stream cannot be read for request "%s".' % self._request._path
                 )
                 return
@@ -147,9 +149,9 @@ class HttpResponse:
             self._xasCli.Close()
             if self._onSent:
                 try:
-                    self._onSent(self._mws2, self)
+                    self._onSent(None, self)
                 except Exception as ex:
-                    logger.error(
+                    self._logger.error(
                         'Exception raised from "Response.OnSent" handler: %s' % ex
                     )
 
@@ -168,7 +170,7 @@ class HttpResponse:
 
     def _makeBaseResponseHdr(self, code):
         reason = self._RESPONSE_CODES.get(code, "Unknown reason")
-        logger.debug(
+        self._logger.debug(
             "From %s:%s %s %s >> [%s] %s"
             % (
                 self._xasCli.CliAddr[0],
@@ -179,7 +181,7 @@ class HttpResponse:
                 reason,
             ),
         )
-        if self._mws2.AllowAllOrigins:
+        if self._allow_all_origins:
             self._acAllowOrigin = self._request.Origin
         if self._acAllowOrigin:
             self.SetHeader("Access-Control-Allow-Origin", self._acAllowOrigin)
@@ -213,7 +215,7 @@ class HttpResponse:
         if not isinstance(upgrade, str) or len(upgrade) == 0:
             raise ValueError('"upgrade" must be a not empty string.')
         if self._hdrSent:
-            logger.warning(
+            self._logger.warning(
                 'Response headers already sent for request "%s".' % self._request._path
             )
             return
@@ -231,7 +233,7 @@ class HttpResponse:
         if not hasattr(stream, "readinto") or not hasattr(stream, "close"):
             raise ValueError('"stream" must be a readable buffer protocol object.')
         if self._hdrSent:
-            logger.warning(
+            self._logger.warning(
                 'Response headers already sent for request "%s".' % self._request._path
             )
             try:
@@ -262,7 +264,7 @@ class HttpResponse:
         if not isinstance(code, int) or code <= 0:
             raise ValueError('"code" must be a positive integer.')
         if self._hdrSent:
-            logger.warning(
+            self._logger.warning(
                 'Response headers already sent for request "%s".' % self._request._path
             )
             return
@@ -357,8 +359,8 @@ class HttpResponse:
     # ------------------------------------------------------------------------
 
     def ReturnNotFound(self):
-        if self._mws2._notFoundURL:
-            self.ReturnRedirect(self._mws2._notFoundURL)
+        if self._not_found_url:
+            self.ReturnRedirect(self._not_found_url)
         else:
             self.Return(404)
 

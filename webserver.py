@@ -3,7 +3,8 @@
 from slim.MicroWebSrv2.libs.XAsyncSockets import XBufferSlot, XAsyncTCPClient
 from slim.MicroWebSrv2.httpRequest import HttpRequest
 from slim.MicroWebSrv2.webRoute import WebRoute, HttpMethod, ResolveRoute
-from slim.logger import logger
+from slim.logger import Logger
+from slim.slimConfig import SlimConfig
 
 import errno
 import btree
@@ -93,13 +94,13 @@ server_socket.listen(LISTEN_MAX)
 
 
 @WebRoute(HttpMethod.GET, "/access-points", "Access Points")
-def request_access_points(_, request):
+def request_access_points(request):
     points = [(p[0], hexlify(p[1])) for p in sta.scan()]
     request.Response.ReturnOkJSON(points)
 
 
 @WebRoute(HttpMethod.POST, "/authenticate", "Authenticate")
-def request_authenticate(_, request):
+def request_authenticate(request):
     data = request.GetPostedURLEncodedForm()
     print("Data", data)
     bssid = data.get("bssid", None)
@@ -213,21 +214,28 @@ def is_dir(path):
 # ----------------------------------------------------------------------
 
 
-class StubbedMicroServer:
-    _DEFAULT_TIMEOUT = 2  # 2 seconds (originally from MicroWebSrv2.__init__).
-    _MAX_CONTENT_LEN = 16 * 1024  # Content len from MicroWebSrv2.SetEmbeddedConfig
+class SlimServer:
+    RESPONSE_PENDING = object()
 
     def __init__(self):
-        self._timeoutSec = self._DEFAULT_TIMEOUT
-        self.AllowAllOrigins = False
-        self.CORSAllowAll = False
         # Modules should be processed in the order that they're added so use OrderedDict.
         self._modules = OrderedDict()
-        self._notFoundURL = None
-        self._maxContentLen = self._MAX_CONTENT_LEN
 
     def add_module(self, name, instance):
         self._modules[name] = instance
+
+    def process_request_modules(self, request):
+        for modName, modInstance in self._modules.items():
+            try:
+                r = modInstance.OnRequest(request)
+                if r is self.RESPONSE_PENDING or request.Response.HeadersSent:
+                    return
+            except Exception as ex:
+                logger.error(
+                    'Exception in request handler of module "%s" (%s).' % (modName, ex)
+                )
+
+        request.Response.ReturnNotImplemented()
 
 
 class FileserverModule:
@@ -242,7 +250,7 @@ class FileserverModule:
     def __init__(self, root="www"):
         self._root = root
 
-    def OnRequest(self, _, request):
+    def OnRequest(self, request):
         if request.IsUpgrade or request.Method not in ("GET", "HEAD"):
             return
 
@@ -278,8 +286,16 @@ class FileserverModule:
         return self._MIME_TYPES.get(ext(filename), None)
 
 
+logger = Logger()
+
+
 class WebRoutesModule:
-    def OnRequest(self, mws2, request):
+    _MAX_CONTENT_LEN = 16 * 1024  # Content len from MicroWebSrv2.SetEmbeddedConfig
+
+    def __init__(self, max_content_len=_MAX_CONTENT_LEN):
+        self._max_content_len = max_content_len
+
+    def OnRequest(self, request):
         if request.IsUpgrade:
             return
 
@@ -288,16 +304,16 @@ class WebRoutesModule:
             return
 
         def route_request():
-            self._route_request(mws2, request, route_result)
+            self._route_request(request, route_result)
 
         cnt_len = request.ContentLength
         if not cnt_len:
             route_request()
         elif request.Method not in ("GET", "HEAD"):
-            if cnt_len <= mws2._maxContentLen:
+            if cnt_len <= self._max_content_len:
                 try:
                     request.async_data_recv(size=cnt_len, on_content_recv=route_request)
-                    return RESPONSE_PENDING
+                    return SlimServer.RESPONSE_PENDING
                 except:
                     logger.error(
                         "Not enough memory to read a content of %s bytes." % cnt_len
@@ -308,12 +324,12 @@ class WebRoutesModule:
         else:
             request.Response.ReturnBadRequest()
 
-    def _route_request(self, mws2, request, route_result):
+    def _route_request(self, request, route_result):
         try:
             if route_result.Args:
-                route_result.Handler(mws2, request, route_result.Args)
+                route_result.Handler(request, route_result.Args)
             else:
-                route_result.Handler(mws2, request)
+                route_result.Handler(request)
             if not request.Response.HeadersSent:
                 logger.warning("No response was sent from route %s." % route_result)
                 request.Response.ReturnNotImplemented()
@@ -323,11 +339,14 @@ class WebRoutesModule:
 
 
 class OptionsModule:
-    def OnRequest(self, mws2, request):
+    def __init__(self, cors_allow_all=False):
+        self._cors_allow_all = cors_allow_all
+
+    def OnRequest(self, request):
         if request.IsUpgrade or request.Method != "OPTIONS":
             return
 
-        if mws2.CORSAllowAll:
+        if self._cors_allow_all:
             request.Response.SetHeader("Access-Control-Allow-Methods", "*")
             request.Response.SetHeader("Access-Control-Allow-Headers", "*")
             request.Response.SetHeader("Access-Control-Allow-Credentials", "true")
@@ -335,29 +354,14 @@ class OptionsModule:
         request.Response.ReturnOk()
 
 
-RESPONSE_PENDING = object()
+config = SlimConfig(logger=logger)
 
-
-def process_request_modules(mws2, request):
-    for modName, modInstance in mws2._modules.items():
-        try:
-            r = modInstance.OnRequest(mws2, request)
-            if r is RESPONSE_PENDING or request.Response.HeadersSent:
-                return
-        except Exception as ex:
-            logger.error(
-                'Exception in request handler of module "%s" (%s).' % (modName, ex)
-            )
-
-    request.Response.ReturnNotImplemented()
-
-
-micro_server = StubbedMicroServer()
+slim_server = SlimServer()
 socket_pool = StubbedSocketPool(poller)
 
-micro_server.add_module("webroute", WebRoutesModule())
-micro_server.add_module("fileserver", FileserverModule())
-micro_server.add_module("options", OptionsModule())
+slim_server.add_module("webroute", WebRoutesModule())
+slim_server.add_module("fileserver", FileserverModule())
+slim_server.add_module("options", OptionsModule())
 
 # Slot size from MicroWebSrv2.SetEmbeddedConfig.
 SLOT_SIZE = 1024
@@ -372,7 +376,7 @@ while True:
             socket_pool, client_socket, client_address, recv_buf_slot, send_buf_slot
         )
         request = HttpRequest(
-            micro_server, tcp_client, process_request=process_request_modules
+            config, tcp_client, process_request=slim_server.process_request_modules
         )
         while socket_pool.has_async_socket():
             # TODO: add in time-out logic. See lines 115 and 133 onward in

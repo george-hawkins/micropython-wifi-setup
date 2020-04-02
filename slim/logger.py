@@ -13,6 +13,3 @@ class Logger:
 
     def _log(self, msg_type, msg):
         print("MWS2-{}> {}".format(msg_type, msg))
-
-
-logger = Logger()

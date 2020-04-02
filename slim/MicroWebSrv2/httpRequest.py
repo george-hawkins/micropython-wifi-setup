@@ -17,27 +17,24 @@ class HttpRequest:
 
     # ------------------------------------------------------------------------
 
-    def __init__(self, microWebSrv2, xasCli, process_request):
-        self._mws2 = microWebSrv2
+    def __init__(self, config, xasCli, process_request):
+        self._timeout_sec = config.timeout_sec
         self._xasCli = xasCli
         self._process_request = process_request
-        self._waitForRecvRequest()
 
-    # ------------------------------------------------------------------------
-
-    def _recvLine(self, onRecv):
-        self._xasCli.AsyncRecvLine(onLineRecv=onRecv, timeoutSec=self._mws2._timeoutSec)
-
-    # ------------------------------------------------------------------------
-
-    def _waitForRecvRequest(self):
         self._httpVer = ""
         self._method = ""
         self._path = ""
         self._headers = {}
         self._content = None
-        self._response = HttpResponse(self._mws2, self)
+        self._response = HttpResponse(config, self)
+
         self._recvLine(self._onFirstLineRecv)
+
+    # ------------------------------------------------------------------------
+
+    def _recvLine(self, onRecv):
+        self._xasCli.AsyncRecvLine(onLineRecv=onRecv, timeoutSec=self._timeout_sec)
 
     # ------------------------------------------------------------------------
 
@@ -77,7 +74,7 @@ class HttpRequest:
                 else:
                     self._response.ReturnEntityTooLarge()
             elif len(elements) == 1 and len(elements[0]) == 0:
-                self._process_request(self._mws2, self)
+                self._process_request(self)
             else:
                 self._response.ReturnBadRequest()
         except Exception as e:
@@ -93,7 +90,7 @@ class HttpRequest:
             self._content = None
 
         self._xasCli.AsyncRecvData(
-            size=size, onDataRecv=_on_content_recv, timeoutSec=self._mws2._timeoutSec
+            size=size, onDataRecv=_on_content_recv, timeoutSec=self._timeout_sec
         )
 
     # ------------------------------------------------------------------------
