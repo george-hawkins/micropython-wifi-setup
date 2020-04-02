@@ -52,6 +52,7 @@ password = db[PASSWORD]
 # My ESP32 takes about 2 seconds to join, so 8s is a long timeout.
 _CONNECT_TIMEOUT = 8000
 
+
 # I had hoped I could use wlan.status() to e.g. report if the password was wrong.
 # But with MicroPython 1.12 (and my Ubiquiti UniFi AP AC-PRO) wlan.status() doesn't prove very useful.
 # See https://forum.micropython.org/viewtopic.php?f=18&t=7942

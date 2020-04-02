@@ -87,7 +87,6 @@ class HttpResponse:
         self._stream = None
         self._sendingBuf = None
         self._hdrSent = False
-        self._onSent = None
 
     # ------------------------------------------------------------------------
 
@@ -147,13 +146,6 @@ class HttpResponse:
         else:
             self._xasCli.OnClosed = None
             self._xasCli.Close()
-            if self._onSent:
-                try:
-                    self._onSent(None, self)
-                except Exception as ex:
-                    self._logger.error(
-                        'Exception raised from "Response.OnSent" handler: %s' % ex
-                    )
 
     # ------------------------------------------------------------------------
 
@@ -466,18 +458,6 @@ class HttpResponse:
     @property
     def HeadersSent(self):
         return self._hdrSent
-
-    # ------------------------------------------------------------------------
-
-    @property
-    def OnSent(self):
-        return self._onSent
-
-    @OnSent.setter
-    def OnSent(self, value):
-        if not isinstance(value, type(lambda: None)):
-            raise ValueError('"OnSent" must be a function.')
-        self._onSent = value
 
 
 # ============================================================================
