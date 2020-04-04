@@ -4,7 +4,8 @@ from slim.MicroWebSrv2.libs.XAsyncSockets import XBufferSlot, XAsyncTCPClient
 from slim.MicroWebSrv2.httpRequest import HttpRequest
 from slim.MicroWebSrv2.webRoute import WebRoute, HttpMethod, ResolveRoute
 from slim.logger import Logger
-from slim.slimConfig import SlimConfig
+from slim.shim import exists, isdir
+from slim.slim_config import SlimConfig
 
 import errno
 import btree
@@ -13,7 +14,6 @@ import time
 import select
 
 from binascii import hexlify
-from os import stat
 from socket import socket
 from collections import OrderedDict
 
@@ -183,26 +183,6 @@ class SingleSocketPool:
 
 # ----------------------------------------------------------------------
 
-# In CPython S_IFDIR etc. are available via os.stat.
-S_IFDIR = 1 << 14
-
-
-# Neither os.path nor pathlib exist in MicroPython 1.12.
-def exists(path):
-    try:
-        stat(path)
-        return True
-    except:
-        return False
-
-
-def is_dir(path):
-    return stat(path)[0] & S_IFDIR != 0
-
-
-# ----------------------------------------------------------------------
-
-
 class SlimServer:
     RESPONSE_PENDING = object()
 
@@ -309,7 +289,7 @@ class FileserverModule:
         if url_path.endswith("/"):
             url_path = url_path[:-1]
         path = self._root + url_path
-        if exists(path) and is_dir(path):
+        if isdir(path):
             path = path + "/" + self._DEFAULT_PAGE
 
         return path if exists(path) else None

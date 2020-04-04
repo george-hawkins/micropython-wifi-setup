@@ -3,15 +3,7 @@
 
 
 import sys
-
-try:
-    # MicroPython 1.12 ESP32 port does not have perf_counter.
-    from time import perf_counter
-except:
-    from time import ticks_ms
-
-    def perf_counter():
-        return ticks_ms() / 1000
+from slim.shim import perf_counter
 
 
 # ============================================================================

@@ -6,14 +6,8 @@ import json
 import sys
 
 
-# MicroPython 1.12 does not have pathlib.Path.read_text.
-def read_text(filename):
-    with open(filename, "r") as file:
-        return file.read()
-
-
 def _read_local(filename):
-    from slim.path import join, dirname
+    from slim.shim import join, dirname, read_text
 
     return read_text(join(dirname(__file__), filename))
 
