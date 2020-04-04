@@ -9,7 +9,6 @@ from slim.slimConfig import SlimConfig
 import errno
 import btree
 import network
-import sys
 import time
 import select
 
@@ -126,7 +125,7 @@ pollEvents = {
 }
 
 
-def print_event(event):
+def print_select_event(event):
     mask = 1
     while event:
         if event & 1:
@@ -138,7 +137,10 @@ def print_event(event):
 # ----------------------------------------------------------------------
 
 
-class StubbedSocketPool:
+# Even without threading we could handle multiple sockets concurrently.
+# However this socket pool handles only a single socket at a time in order to avoid the
+# memory overhead of needing more than one send and receive XBufferSlot at a time.
+class SingleSocketPool:
     def __init__(self, poller):
         self._poller = poller
         self._async_socket = None
@@ -176,7 +178,7 @@ class StubbedSocketPool:
     def has_async_socket(self):
         return self._async_socket is not None
 
-    def dispatch(self, s, event):
+    def pump(self, s, event):
         if s != self._async_socket.GetSocketObj():
             return
 
@@ -282,13 +284,11 @@ class FileserverModule:
         return self._mime_types.get(ext(filename), None)
 
 
-logger = Logger()
-
-
 class WebRoutesModule:
     _MAX_CONTENT_LEN = 16 * 1024  # Content len from MicroWebSrv2.SetEmbeddedConfig
 
-    def __init__(self, max_content_len=_MAX_CONTENT_LEN):
+    def __init__(self, logger, max_content_len=_MAX_CONTENT_LEN):
+        self._logger = logger
         self._max_content_len = max_content_len
 
     def OnRequest(self, request):
@@ -311,7 +311,7 @@ class WebRoutesModule:
                     request.async_data_recv(size=cnt_len, on_content_recv=route_request)
                     return SlimServer.RESPONSE_PENDING
                 except:
-                    logger.error(
+                    self._logger.error(
                         "Not enough memory to read a content of %s bytes." % cnt_len
                     )
                     request.Response.ReturnServiceUnavailable()
@@ -327,10 +327,10 @@ class WebRoutesModule:
             else:
                 route_result.Handler(request)
             if not request.Response.HeadersSent:
-                logger.warning("No response was sent from route %s." % route_result)
+                self._logger.warning("No response was sent from route %s." % route_result)
                 request.Response.ReturnNotImplemented()
         except Exception as ex:
-            logger.error("Exception raised from route %s: %s" % (route_result, ex))
+            self._logger.error("Exception raised from route %s: %s" % (route_result, ex))
             request.Response.ReturnInternalServerError()
 
 
@@ -350,12 +350,14 @@ class OptionsModule:
         request.Response.ReturnOk()
 
 
+logger = Logger()
+
 config = SlimConfig(logger=logger)
 
 slim_server = SlimServer()
-socket_pool = StubbedSocketPool(poller)
+socket_pool = SingleSocketPool(poller)
 
-slim_server.add_module("webroute", WebRoutesModule())
+slim_server.add_module("webroute", WebRoutesModule(logger))
 # fmt: off
 slim_server.add_module("fileserver", FileserverModule({
     "html": "text/html",
@@ -371,22 +373,39 @@ SLOT_SIZE = 1024
 recv_buf_slot = XBufferSlot(SLOT_SIZE)
 send_buf_slot = XBufferSlot(SLOT_SIZE)
 
-while True:
-    client_socket, client_address = server_socket.accept()
-    try:
+poller.register(server_socket, select.POLLIN | select.POLLERR | select.POLLHUP)
+
+
+def pump(s, event):
+    # If not already processing a request, see if a new request has come in.
+    if not socket_pool.has_async_socket():
+        if s != server_socket:
+            return
+
+        if event != select.POLLIN:
+            raise Exception("unexpected event {} on server socket".format(event))
+
+        client_socket, client_address = server_socket.accept()
+
+        # XAsyncTCPClient adds itself to socket_pool (via the ctor of its parent XAsyncSocket).
         tcp_client = XAsyncTCPClient(
             socket_pool, client_socket, client_address, recv_buf_slot, send_buf_slot
         )
-        request = HttpRequest(
+        # HttpRequest registers itself to receive data via tcp_client, once
+        # it's read the request it calls the given process_request callback.
+        HttpRequest(
             config, tcp_client, process_request=slim_server.process_request_modules
         )
-        while socket_pool.has_async_socket():
-            # TODO: add in time-out logic. See lines 115 and 133 onward in
-            #  https://github.com/jczic/MicroWebSrv2/blob/d8663f6/MicroWebSrv2/libs/XAsyncSockets.py
-            for (s, event) in poller.ipoll():
-                # If event has bits other than POLLIN or POLLOUT then print it.
-                if event & ~(select.POLLIN | select.POLLOUT):
-                    print_event(event)
-                socket_pool.dispatch(s, event)
-    except Exception as e:
-        sys.print_exception(e)
+
+    else:  # Else process the existing request.
+        # TODO: add in time-out logic. See lines 115 and 133 onward in
+        #  https://github.com/jczic/MicroWebSrv2/blob/d8663f6/MicroWebSrv2/libs/XAsyncSockets.py
+        socket_pool.pump(s, event)
+
+
+while True:
+    for (s, event) in poller.ipoll():
+        # If event has bits other than POLLIN or POLLOUT then print it.
+        if event & ~(select.POLLIN | select.POLLOUT):
+            print_select_event(event)
+        pump(s, event)
