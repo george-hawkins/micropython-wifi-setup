@@ -5,6 +5,18 @@ from os import stat
 import json
 import sys
 
+
+# MicroPython 1.12 does not have pathlib.Path.read_text.
+def read_text(filename):
+    with open(filename, "r") as file:
+        return file.read()
+
+
+def _read_local(filename):
+    from slim.path import join, dirname
+    return read_text(join(dirname(__file__), filename))
+
+
 # ============================================================================
 # ===( HttpResponse )=========================================================
 # ============================================================================
@@ -55,18 +67,7 @@ class HttpResponse:
         505: "HTTP Version Not Supported",
     }
 
-    _CODE_CONTENT_TMPL = """\
-    <!doctype html>
-    <html lang="en">
-      <head>
-        <meta charset="utf-8">
-        <title>Status code %(code)d</title>
-      </head>
-      <body>
-        <p>Status code [%(code)d] %(reason)s</p>
-      </body>
-    </html>
-    """
+    _CODE_CONTENT_TMPL = _read_local("status-code.html")
 
     # ------------------------------------------------------------------------
 
@@ -160,8 +161,13 @@ class HttpResponse:
 
     # ------------------------------------------------------------------------
 
+    def _reason(self, code):
+        return self._RESPONSE_CODES.get(code, "Unknown reason")
+
+    # ------------------------------------------------------------------------
+
     def _makeBaseResponseHdr(self, code):
-        reason = self._RESPONSE_CODES.get(code, "Unknown reason")
+        reason = self._reason(code)
         self._logger.debug(
             "From %s:%s %s %s >> [%s] %s"
             % (
@@ -252,6 +258,18 @@ class HttpResponse:
 
     # ------------------------------------------------------------------------
 
+    # An accept header can contain patterns, e.g. "text/*" but this function only handles the pattern "*/*".
+    def _status_code_content(self, code):
+        for type in self._request.Accept:
+            type = type.rsplit(";", 1)[0]  # Strip ";q=weight".
+            if type in ["text/html", "*/*"]:
+                content = self._CODE_CONTENT_TMPL.format(code=code, reason=self._reason(code))
+                return "text/html", content
+            if type == "application/json":
+                content = { "code": code, "name": self._reason(code) }
+                return "application/json", json.dumps(content)
+        return None, None
+
     def Return(self, code, content=None):
         if not isinstance(code, int) or code <= 0:
             raise ValueError('"code" must be a positive integer.')
@@ -261,20 +279,23 @@ class HttpResponse:
             )
             return
         if not content:
-            respCode = self._RESPONSE_CODES.get(code, "Unknown reason")
-            self._contentType = "text/html"
-            content = self._CODE_CONTENT_TMPL % {"code": code, "reason": respCode}
-        if isinstance(content, str):
-            content = content.encode("UTF-8")
-            if not self._contentType:
-                self._contentType = "text/html"
-            self._contentCharset = "UTF-8"
-        elif not self._contentType:
-            self._contentType = "application/octet-stream"
-        self._contentLength = len(content)
+            (self._contentType, content) = self._status_code_content(code)
+
+        if content:
+            if isinstance(content, str):
+                content = content.encode("UTF-8")
+                if not self._contentType:
+                    self._contentType = "text/html"
+                self._contentCharset = "UTF-8"
+            elif not self._contentType:
+                self._contentType = "application/octet-stream"
+            self._contentLength = len(content)
+
         data = self._makeResponseHdr(code)
-        if self._request._method != "HEAD":
+
+        if content and self._request._method != "HEAD":
             data += bytes(content)
+
         self._xasCli.AsyncSendData(data, onDataSent=self._onDataSent)
         self._hdrSent = True
 
