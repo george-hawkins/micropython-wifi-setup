@@ -23,7 +23,9 @@ class SlimServer:
         self._logger = config.logger
         self._server_socket = self._create_server_socket(address, port)
 
-        poller.register(self._server_socket, select.POLLIN | select.POLLERR | select.POLLHUP)
+        poller.register(
+            self._server_socket, select.POLLIN | select.POLLERR | select.POLLHUP
+        )
 
         self._socket_pool = SingleSocketPool(poller)
 
@@ -69,7 +71,11 @@ class SlimServer:
 
             # XAsyncTCPClient adds itself to _socket_pool (via the ctor of its parent XAsyncSocket).
             tcp_client = XAsyncTCPClient(
-                self._socket_pool, client_socket, client_address, self._recv_buf_slot, self._send_buf_slot
+                self._socket_pool,
+                client_socket,
+                client_address,
+                self._recv_buf_slot,
+                self._send_buf_slot,
             )
             # HttpRequest registers itself to receive data via tcp_client and once
             # it's read the request, it calls the given process_request callback.

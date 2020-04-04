@@ -46,6 +46,7 @@ print("Connected to {} with address {}".format(ssid, sta.ifconfig()[0]))
 
 # ----------------------------------------------------------------------
 
+
 @WebRoute(HttpMethod.GET, "/access-points", "Access Points")
 def request_access_points(request):
     points = [(p[0], hexlify(p[1])) for p in sta.scan()]

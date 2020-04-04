@@ -45,8 +45,12 @@ class WebRouteModule:
             else:
                 route_result.Handler(request)
             if not request.Response.HeadersSent:
-                self._logger.warning("No response was sent from route %s." % route_result)
+                self._logger.warning(
+                    "No response was sent from route %s." % route_result
+                )
                 request.Response.ReturnNotImplemented()
         except Exception as ex:
-            self._logger.error("Exception raised from route %s: %s" % (route_result, ex))
+            self._logger.error(
+                "Exception raised from route %s: %s" % (route_result, ex)
+            )
             request.Response.ReturnInternalServerError()

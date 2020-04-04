@@ -49,4 +49,3 @@ def sync_wlan_connect(wlan, timeout=_CONNECT_TIMEOUT):
         if diff > timeout:
             wlan.disconnect()
             return False
-
