@@ -242,13 +242,8 @@ class SlimServer:
 class FileserverModule:
     _DEFAULT_PAGE = "index.html"
 
-    _MIME_TYPES = {
-        "html": "text/html",
-        "css": "text/css",
-        "js": "application/javascript",
-    }
-
-    def __init__(self, root="www"):
+    def __init__(self, mime_types, root="www"):
+        self._mime_types = mime_types
         self._root = root
 
     def OnRequest(self, request):
@@ -284,7 +279,7 @@ class FileserverModule:
             partition = name.rpartition(".")
             return None if partition[0] == "" else partition[2].lower()
 
-        return self._MIME_TYPES.get(ext(filename), None)
+        return self._mime_types.get(ext(filename), None)
 
 
 logger = Logger()
@@ -361,7 +356,11 @@ slim_server = SlimServer()
 socket_pool = StubbedSocketPool(poller)
 
 slim_server.add_module("webroute", WebRoutesModule())
-slim_server.add_module("fileserver", FileserverModule())
+slim_server.add_module("fileserver", FileserverModule({
+    "html": "text/html",
+    "css": "text/css",
+    "js": "application/javascript",
+}))
 slim_server.add_module("options", OptionsModule())
 
 # Slot size from MicroWebSrv2.SetEmbeddedConfig.
