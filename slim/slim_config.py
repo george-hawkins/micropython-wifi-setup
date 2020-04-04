@@ -10,8 +10,10 @@ class SlimConfig:
         timeout_sec=_DEFAULT_TIMEOUT,
         allow_all_origins=False,
         not_found_url=None,
+        server_name="Slim Server (MicroPython)",
     ):
         self.logger = logger
         self.timeout_sec = timeout_sec
         self.allow_all_origins = allow_all_origins
         self.not_found_url = not_found_url
+        self.server_name = server_name

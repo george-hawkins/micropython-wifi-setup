@@ -69,6 +69,7 @@ class HttpResponse:
     def __init__(self, config, request):
         self._not_found_url = config.not_found_url
         self._allow_all_origins = config.allow_all_origins
+        self._server_name = config.server_name
         self._logger = config.logger
 
         self._request = request
@@ -178,7 +179,7 @@ class HttpResponse:
             self._acAllowOrigin = self._request.Origin
         if self._acAllowOrigin:
             self.SetHeader("Access-Control-Allow-Origin", self._acAllowOrigin)
-        self.SetHeader("Server", "MicroWebSrv2 by JC`zic")
+        self.SetHeader("Server", self._server_name)
         hdr = ""
         for n in self._headers:
             hdr += "%s: %s\r\n" % (n, self._headers[n])
