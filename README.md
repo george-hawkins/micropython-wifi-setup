@@ -12,20 +12,58 @@ Only the `source` step needs to be repeated, whenever you create a new terminal 
 
 On Mac:
 
-    $ export PORT=/dev/cu.SLAB_USBtoUART
+    $ PORT=/dev/cu.SLAB_USBtoUART
 
 On Linux:
 
-    $ export PORT=/dev/ttyUSB0
+    $ PORT=/dev/ttyUSB0
 
 Or if you've setup a `udev` rule to create a fixed name:
 
-    $ export PORT=/dev/cp2104
-
+    $ PORT=/dev/cp2104
 
 Then to interact with the MicroPython board:
 
     $ rshell -p $PORT --buffer-size 512 --quiet
+
+To clear the filesystem on the board:
+
+    $ rshell -p $PORT --buffer-size 512 --quiet repl '~ import os ~ os.VfsFat.mkfs(bdev) ~'
+
+Note: this will also remove `boot.py` - if you've got any special boot setup, you should copy this file and restore it after the clean-up.
+
+To install this project:
+
+    $ rshell -p $PORT --buffer-size 512 --quiet
+    > cp -r main.py slim www /pyboard
+
+Go into the REPL and reset the board, it'll complain that "WiFi credentials have not been configured":
+
+    > repl
+    ...
+    Exception: WiFi credentials have not been configured
+
+To set them:
+
+    >>> db[SSID] = "My WiFi network"
+    >>> db[PASSWORD] = "My WiFi password"
+    >>> db.flush()
+    0
+
+Now reset the board again, this time it should confirm that it connected successfully to your WiFi network:
+
+    Connected to b'My WiFi network' with address 192.168.0.178
+     + [@WebRoute] GET /access-points (Access Points)
+     + [@WebRoute] POST /authenticate (Authenticate)
+
+Now it another terminal session you can test things out with `curl` and the address reported in the previous step:
+
+    $ ADDR=192.168.0.178
+    $ curl -v $ADDR
+
+You'll see the request and response headers and [`www/index.html`](www/index.html) will be returned as the content.
+
+There are more examples in [`request-examples.md`](request-examples.md).
 
 Notes
 -----
