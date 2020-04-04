@@ -2,10 +2,9 @@ import select
 from collections import OrderedDict
 from socket import socket
 
-from slim.MicroWebSrv2.httpRequest import HttpRequest
-from slim.MicroWebSrv2.libs.XAsyncSockets import XBufferSlot, XAsyncTCPClient
+from slim.micro_web_srv_2.http_request import HttpRequest
+from slim.micro_web_srv_2.libs.xasync_sockets import XBufferSlot, XAsyncTCPClient
 from slim.single_socket_pool import SingleSocketPool
-from slim.webserver import slim_server
 
 
 class SlimServer:
@@ -36,7 +35,7 @@ class SlimServer:
     def add_module(self, name, instance):
         self._modules[name] = instance
 
-    def process_request_modules(self, request):
+    def _process_request_modules(self, request):
         for modName, modInstance in self._modules.items():
             try:
                 r = modInstance.OnRequest(request)
@@ -75,7 +74,7 @@ class SlimServer:
             # HttpRequest registers itself to receive data via tcp_client and once
             # it's read the request, it calls the given process_request callback.
             HttpRequest(
-                self._config, tcp_client, process_request=slim_server.process_request_modules
+                self._config, tcp_client, process_request=self._process_request_modules
             )
         else:  # Else process the existing request.
             # TODO: add in time-out logic. See lines 115 and 133 onward in

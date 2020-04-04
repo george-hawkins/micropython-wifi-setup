@@ -1,6 +1,6 @@
 # The compiler needs a lot of space to process XAsyncSockets etc. so
 # import them first before anything else starts to consume memory.
-from slim.MicroWebSrv2.webRoute import WebRoute, HttpMethod
+from slim.micro_web_srv_2.web_route import WebRoute, HttpMethod
 from slim.fileserver_module import FileserverModule
 from slim.options_module import OptionsModule
 from slim.slim_server import SlimServer

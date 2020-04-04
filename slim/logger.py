@@ -12,4 +12,4 @@ class Logger:
         self._log("ERROR", msg)
 
     def _log(self, msg_type, msg):
-        print("MWS2-{}> {}".format(msg_type, msg))
+        print("Slim[{}]: {}".format(msg_type, msg))

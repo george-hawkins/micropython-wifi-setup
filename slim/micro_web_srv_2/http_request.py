@@ -1,8 +1,8 @@
 # The MIT License (MIT)
 # Copyright 2019 Jean-Christophe Bos & HC2 (www.hc2.fr)
 
-from .libs.urlUtils import UrlUtils
-from .httpResponse import HttpResponse
+from .libs.url_utils import UrlUtils
+from .http_response import HttpResponse
 import json
 import sys
 
