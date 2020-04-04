@@ -79,20 +79,6 @@ print("Connected to {} with address {}".format(ssid, sta.ifconfig()[0]))
 
 # ----------------------------------------------------------------------
 
-server_address = ("0.0.0.0", 80)
-
-server_socket = socket()
-server_socket.bind(server_address)
-
-# The backlog argument to `listen` isn't optional for the ESP32 port.
-# Internally any passed in backlog value is clipped to a maximum of 255.
-LISTEN_MAX = 255
-
-server_socket.listen(LISTEN_MAX)
-
-# ----------------------------------------------------------------------
-
-
 @WebRoute(HttpMethod.GET, "/access-points", "Access Points")
 def request_access_points(request):
     points = [(p[0], hexlify(p[1])) for p in sta.scan()]
@@ -153,7 +139,7 @@ class SingleSocketPool:
 
     def RemoveAsyncSocket(self, async_socket):
         self._check(async_socket)
-        poller.unregister(self._async_socket.GetSocketObj())
+        self._poller.unregister(self._async_socket.GetSocketObj())
         self._async_socket = None
         return True  # Caller XAsyncSocket._close will close the underlying socket.
 
@@ -170,7 +156,7 @@ class SingleSocketPool:
             self._mask |= event
         else:
             self._mask &= ~event
-        poller.register(self._async_socket.GetSocketObj(), self._mask)
+        self._poller.register(self._async_socket.GetSocketObj(), self._mask)
 
     def _check(self, async_socket):
         assert self._async_socket == async_socket, "unexpected socket"
@@ -220,9 +206,27 @@ def is_dir(path):
 class SlimServer:
     RESPONSE_PENDING = object()
 
-    def __init__(self):
+    # The backlog argument to `listen` isn't optional for the ESP32 port.
+    # Internally any passed in backlog value is clipped to a maximum of 255.
+    _LISTEN_MAX = 255
+
+    # Slot size from MicroWebSrv2.SetEmbeddedConfig.
+    _SLOT_SIZE = 1024
+
+    # Python uses "" to refer to INADDR_ANY, i.e. all interfaces.
+    def __init__(self, config, poller, address="", port=80):
+        self._config = config
+        self._logger = config.logger
+        self._server_socket = self._create_server_socket(address, port)
+
+        poller.register(self._server_socket, select.POLLIN | select.POLLERR | select.POLLHUP)
+
+        self._socket_pool = SingleSocketPool(poller)
+
         # Modules should be processed in the order that they're added so use OrderedDict.
         self._modules = OrderedDict()
+        self._recv_buf_slot = XBufferSlot(self._SLOT_SIZE)
+        self._send_buf_slot = XBufferSlot(self._SLOT_SIZE)
 
     def add_module(self, name, instance):
         self._modules[name] = instance
@@ -234,12 +238,46 @@ class SlimServer:
                 if r is self.RESPONSE_PENDING or request.Response.HeadersSent:
                     return
             except Exception as ex:
-                logger.error(
+                self._logger.error(
                     'Exception in request handler of module "%s" (%s).' % (modName, ex)
                 )
 
         request.Response.ReturnNotImplemented()
 
+    def _create_server_socket(self, address, port):
+        server_socket = socket()
+
+        server_socket.bind((address, port))
+        server_socket.listen(self._LISTEN_MAX)
+
+        return server_socket
+
+    def pump(self, s, event):
+        # If not already processing a request, see if a new request has come in.
+        if not self._socket_pool.has_async_socket():
+            if s != self._server_socket:
+                return
+
+            if event != select.POLLIN:
+                raise Exception("unexpected event {} on server socket".format(event))
+
+            client_socket, client_address = self._server_socket.accept()
+
+            # XAsyncTCPClient adds itself to _socket_pool (via the ctor of its parent XAsyncSocket).
+            tcp_client = XAsyncTCPClient(
+                self._socket_pool, client_socket, client_address, self._recv_buf_slot, self._send_buf_slot
+            )
+            # HttpRequest registers itself to receive data via tcp_client and once
+            # it's read the request, it calls the given process_request callback.
+            HttpRequest(
+                self._config, tcp_client, process_request=slim_server.process_request_modules
+            )
+        else:  # Else process the existing request.
+            # TODO: add in time-out logic. See lines 115 and 133 onward in
+            #  https://github.com/jczic/MicroWebSrv2/blob/d8663f6/MicroWebSrv2/libs/XAsyncSockets.py
+            self._socket_pool.pump(s, event)
+
+# ----------------------------------------------------------------------
 
 class FileserverModule:
     _DEFAULT_PAGE = "index.html"
@@ -354,8 +392,7 @@ logger = Logger()
 
 config = SlimConfig(logger=logger)
 
-slim_server = SlimServer()
-socket_pool = SingleSocketPool(poller)
+slim_server = SlimServer(config, poller)
 
 slim_server.add_module("webroute", WebRoutesModule(logger))
 # fmt: off
@@ -367,45 +404,9 @@ slim_server.add_module("fileserver", FileserverModule({
 # fmt: on
 slim_server.add_module("options", OptionsModule())
 
-# Slot size from MicroWebSrv2.SetEmbeddedConfig.
-SLOT_SIZE = 1024
-
-recv_buf_slot = XBufferSlot(SLOT_SIZE)
-send_buf_slot = XBufferSlot(SLOT_SIZE)
-
-poller.register(server_socket, select.POLLIN | select.POLLERR | select.POLLHUP)
-
-
-def pump(s, event):
-    # If not already processing a request, see if a new request has come in.
-    if not socket_pool.has_async_socket():
-        if s != server_socket:
-            return
-
-        if event != select.POLLIN:
-            raise Exception("unexpected event {} on server socket".format(event))
-
-        client_socket, client_address = server_socket.accept()
-
-        # XAsyncTCPClient adds itself to socket_pool (via the ctor of its parent XAsyncSocket).
-        tcp_client = XAsyncTCPClient(
-            socket_pool, client_socket, client_address, recv_buf_slot, send_buf_slot
-        )
-        # HttpRequest registers itself to receive data via tcp_client, once
-        # it's read the request it calls the given process_request callback.
-        HttpRequest(
-            config, tcp_client, process_request=slim_server.process_request_modules
-        )
-
-    else:  # Else process the existing request.
-        # TODO: add in time-out logic. See lines 115 and 133 onward in
-        #  https://github.com/jczic/MicroWebSrv2/blob/d8663f6/MicroWebSrv2/libs/XAsyncSockets.py
-        socket_pool.pump(s, event)
-
-
 while True:
     for (s, event) in poller.ipoll():
         # If event has bits other than POLLIN or POLLOUT then print it.
         if event & ~(select.POLLIN | select.POLLOUT):
             print_select_event(event)
-        pump(s, event)
+        slim_server.pump(s, event)
