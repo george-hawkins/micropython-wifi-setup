@@ -356,11 +356,13 @@ slim_server = SlimServer()
 socket_pool = StubbedSocketPool(poller)
 
 slim_server.add_module("webroute", WebRoutesModule())
+# fmt: off
 slim_server.add_module("fileserver", FileserverModule({
     "html": "text/html",
     "css": "text/css",
     "js": "application/javascript",
 }))
+# fmt: on
 slim_server.add_module("options", OptionsModule())
 
 # Slot size from MicroWebSrv2.SetEmbeddedConfig.

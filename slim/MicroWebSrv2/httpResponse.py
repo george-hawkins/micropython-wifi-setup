@@ -14,6 +14,7 @@ def read_text(filename):
 
 def _read_local(filename):
     from slim.path import join, dirname
+
     return read_text(join(dirname(__file__), filename))
 
 
@@ -263,10 +264,12 @@ class HttpResponse:
         for type in self._request.Accept:
             type = type.rsplit(";", 1)[0]  # Strip ";q=weight".
             if type in ["text/html", "*/*"]:
-                content = self._CODE_CONTENT_TMPL.format(code=code, reason=self._reason(code))
+                content = self._CODE_CONTENT_TMPL.format(
+                    code=code, reason=self._reason(code)
+                )
                 return "text/html", content
             if type == "application/json":
-                content = { "code": code, "name": self._reason(code) }
+                content = {"code": code, "name": self._reason(code)}
                 return "application/json", json.dumps(content)
         return None, None
 

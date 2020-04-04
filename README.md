@@ -243,3 +243,21 @@ So it doesn't know about `sys.print_exception` and other MicroPython specific fu
 Note: `vlasovskikh` is Andrey Vlasovskikh - he is the technical lead on PyCharm.
 
 In the end, I uninstalled the plugin - the other features it offered seemed little more convenient than using `rshell`.
+
+Black and Flake8
+----------------
+
+The code is formatted with [Black](https://black.readthedocs.io/en/stable/) and checked with [Flake8](https://flake8.pycqa.org/en/latest/).
+
+    $ pip install black
+    $ pip install flake8
+
+To reformat, provide a list of files and/or directories to `black`:
+
+    $ black ...
+
+To check, provide a list of files and/or directories to `flake8`:
+
+    $ flake8 ... | fgrep -v -e E501 -e E203 -e E722
+
+Here `fgrep` is used to ignore E501 (line too long) and E203 (whitespace before ':') as these are rules that Black and Flake8 disagree on. I also ignore E203 (do not use bare 'except') as I'm not prepared to enforce this rule in the code.
