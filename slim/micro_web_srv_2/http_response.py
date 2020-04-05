@@ -420,8 +420,7 @@ class HttpResponse:
 
     @AllowCaching.setter
     def AllowCaching(self, value):
-        if not isinstance(value, bool):
-            raise ValueError('"AllowCaching" must be a boolean.')
+        self._check_value("AllowCaching", value, isinstance(value, bool))
         self._allowCaching = value
 
     # ------------------------------------------------------------------------
@@ -432,8 +431,7 @@ class HttpResponse:
 
     @AccessControlAllowOrigin.setter
     def AccessControlAllowOrigin(self, value):
-        if value is not None and not isinstance(value, str):
-            raise ValueError('"AccessControlAllowOrigin" must be a string or None.')
+        self._check_none_or_str("AccessControlAllowOrigin", value)
         self._acAllowOrigin = value
 
     # ------------------------------------------------------------------------
@@ -444,8 +442,7 @@ class HttpResponse:
 
     @ContentType.setter
     def ContentType(self, value):
-        if value is not None and not isinstance(value, str):
-            raise ValueError('"ContentType" must be a string or None.')
+        self._check_none_or_str("ContentType", value)
         self._contentType = value
 
     # ------------------------------------------------------------------------
@@ -456,8 +453,7 @@ class HttpResponse:
 
     @ContentCharset.setter
     def ContentCharset(self, value):
-        if value is not None and not isinstance(value, str):
-            raise ValueError('"ContentCharset" must be a string or None.')
+        self._check_none_or_str("ContentCharset", value)
         self._contentCharset = value
 
     # ------------------------------------------------------------------------
@@ -468,8 +464,7 @@ class HttpResponse:
 
     @ContentLength.setter
     def ContentLength(self, value):
-        if not isinstance(value, int) or value < 0:
-            raise ValueError('"ContentLength" must be a positive integer or zero.')
+        self._check_value("ContentLength", value, isinstance(value, int) and value >= 0)
         self._contentLength = value
 
     # ------------------------------------------------------------------------
@@ -477,6 +472,15 @@ class HttpResponse:
     @property
     def HeadersSent(self):
         return self._hdrSent
+
+    # ------------------------------------------------------------------------
+
+    def _check_value(self, name, value, condition):
+        if not condition:
+            raise ValueError('{} is not a valid value for "{}"'.format(value, name))
+
+    def _check_none_or_str(self, name, value):
+        self._check_value(name, value, value is None or isinstance(value, str))
 
 
 # ============================================================================
