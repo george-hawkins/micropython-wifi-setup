@@ -47,24 +47,37 @@ print("Connected to {} with address {}".format(ssid, sta.ifconfig()[0]))
 # ----------------------------------------------------------------------
 
 
-@WebRoute(HttpMethod.GET, "/access-points", "Access Points")
+@WebRoute(HttpMethod.GET, "/api/access-points")
 def request_access_points(request):
     points = [(p[0], hexlify(p[1])) for p in sta.scan()]
     request.Response.ReturnOkJSON(points)
 
 
-@WebRoute(HttpMethod.POST, "/authenticate", "Authenticate")
+@WebRoute(HttpMethod.POST, "/api/access-point")
 def request_authenticate(request):
     data = request.GetPostedURLEncodedForm()
     print("Data", data)
     bssid = data.get("bssid", None)
     password = data.get("password", None)
-    if bssid is None or password is None:
-        request.Response.ReturnBadRequest()
-    else:
+    if bssid and password:
         print("BSSID", bssid)
         print("Password", password)
-        request.Response.ReturnOk()
+        request.Response.ReturnOkJSON({ "message": "192.168.0.xxx" })
+    else:
+        request.Response.ReturnBadRequest()
+
+
+_NO_CONTENT = 204
+
+@WebRoute(HttpMethod.POST, "/api/alive")
+def request_authenticate(request):
+    data = request.GetPostedURLEncodedForm()
+    timeout = data.get("timeout", None)
+    if timeout:
+        print("Timeout", timeout)
+        request.Response.Return(_NO_CONTENT)
+    else:
+        request.Response.ReturnBadRequest()
 
 
 # ----------------------------------------------------------------------
@@ -84,6 +97,8 @@ slim_server.add_module("fileserver", FileserverModule({
     "html": "text/html",
     "css": "text/css",
     "js": "application/javascript",
+    "woff2": "font/woff2",
+    "ico": "image/x-icon",
 }))
 # fmt: on
 slim_server.add_module("options", OptionsModule())

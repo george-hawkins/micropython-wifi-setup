@@ -9,15 +9,14 @@ import sys
 # ============================================================================
 
 
-def WebRoute(method=None, routePath=None, name=None):
+def WebRoute(method=None, routePath=None):
 
     if not method or not routePath:
         raise ValueError("[@WebRoute] arguments are required for this decorator.")
 
     def decorated(handler):
-        RegisterRoute(handler, method, routePath, name)
-        s = (" (%s)" % name) if name else ""
-        print(" + [@WebRoute] %s %s" % (method, routePath) + s)
+        RegisterRoute(handler, method, routePath)
+        print(" + [@WebRoute] %s %s" % (method, routePath))
         return handler
 
     return decorated
@@ -28,7 +27,7 @@ def WebRoute(method=None, routePath=None, name=None):
 # ============================================================================
 
 
-def RegisterRoute(handler, method, routePath, name=None):
+def RegisterRoute(handler, method, routePath):
     if not isinstance(handler, type(lambda: None)):
         raise ValueError('"handler" must be a function.')
     if not isinstance(method, str) or len(method) == 0:
@@ -37,8 +36,6 @@ def RegisterRoute(handler, method, routePath, name=None):
         raise ValueError('"routePath" requires a not empty string.')
     if routePath[0] != "/":
         raise ValueError('"routePath" must start with a "/".')
-    if name is not None and not isinstance(name, str):
-        raise ValueError('"name" must be a string or None.')
     method = method.upper()
     if len(routePath) > 1 and routePath.endswith("/"):
         routePath = routePath[:-1]
@@ -64,7 +61,7 @@ def RegisterRoute(handler, method, routePath, name=None):
     for regRoute in _registeredRoutes:
         if regRoute.Method == method and regRoute.Regex == regex:
             raise ValueError('Duplicated route: "%s".' % routePath)
-    regRoute = _registeredRoute(handler, method, routePath, name, regex, argNames)
+    regRoute = _registeredRoute(handler, method, routePath, regex, argNames)
     _registeredRoutes.append(regRoute)
 
 
@@ -109,8 +106,6 @@ class RouteResult:
         self._args = args
 
     def __repr__(self):
-        if self._regRoute.Name:
-            return self._regRoute.Name
         return "%s %s" % (self._regRoute.Method, self._regRoute.RoutePath)
 
     @property
@@ -124,10 +119,6 @@ class RouteResult:
     @property
     def RoutePath(self):
         return self._regRoute.RoutePath
-
-    @property
-    def Name(self):
-        return self._regRoute.Name
 
     @property
     def Args(self):
@@ -159,11 +150,10 @@ _registeredRoutes = []
 
 
 class _registeredRoute:
-    def __init__(self, handler, method, routePath, name, regex, argNames):
+    def __init__(self, handler, method, routePath, regex, argNames):
         self.Handler = handler
         self.Method = method
         self.RoutePath = routePath
-        self.Name = name
         self.Regex = regex
         self.ArgNames = argNames
 
