@@ -3,7 +3,7 @@
 
 
 import sys
-from slim.shim import perf_counter
+from time import ticks_ms, ticks_diff, ticks_add
 
 
 # ============================================================================
@@ -37,7 +37,7 @@ class XAsyncSocket:
         self._socket = socket
         self._recvBufSlot = recvBufSlot
         self._sendBufSlot = sendBufSlot
-        self._expireTimeSec = None
+        self._expire_time_millis = None
         self._onClosed = None
         try:
             socket.settimeout(0)
@@ -56,7 +56,7 @@ class XAsyncSocket:
     def _setExpireTimeout(self, timeoutSec):
         try:
             if timeoutSec and timeoutSec > 0:
-                self._expireTimeSec = perf_counter() + timeoutSec
+                self._expire_time_millis = ticks_add(ticks_ms(), timeoutSec * 1000)
         except:
             raise XAsyncSocketException(
                 '"timeoutSec" is incorrect to set expire timeout.'
@@ -65,7 +65,15 @@ class XAsyncSocket:
     # ------------------------------------------------------------------------
 
     def _removeExpireTimeout(self):
-        self._expireTimeSec = None
+        self._expire_time_millis = None
+
+    # ------------------------------------------------------------------------
+
+    def pump_expire(self):
+        if self._expire_time_millis:
+            diff = ticks_diff(ticks_ms(), self._expire_time_millis)
+            if diff > 0:
+                self._close(XClosedReason.Timeout)
 
     # ------------------------------------------------------------------------
 
@@ -119,7 +127,7 @@ class XAsyncSocket:
 
     @property
     def ExpireTimeSec(self):
-        return self._expireTimeSec
+        return self._expire_time_millis / 1000
 
     @property
     def OnClosed(self):

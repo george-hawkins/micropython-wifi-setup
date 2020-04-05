@@ -57,3 +57,7 @@ class SingleSocketPool:
         # If there are still bits left in event...
         if event:
             self._async_socket.OnExceptionalCondition()
+
+    def pump_expire(self):
+        if self._async_socket:
+            self._async_socket.pump_expire()

@@ -88,9 +88,18 @@ slim_server.add_module("fileserver", FileserverModule({
 # fmt: on
 slim_server.add_module("options", OptionsModule())
 
+# If no timeout is given `ipoll` blocks and the for-loop goes forever.
+# With a timeout the for-loop exits every time the timeout expires.
+# I.e. the underlying iterable reports that it has no more elements.
 while True:
-    for (s, event) in poller.ipoll():
+    # Under the covers polling is done with a non-blocking ioctl call and the timeout
+    # (or blocking forever) is implemented with a hard loop, so there's nothing to be
+    # gained, e.g. reduced power consumption, by using a timeout greater than 0.
+    for (s, event) in poller.ipoll(0):
         # If event has bits other than POLLIN or POLLOUT then print it.
         if event & ~(select.POLLIN | select.POLLOUT):
             print_select_event(event)
         slim_server.pump(s, event)
+
+    # Give things a chance to check for the expiration of timeouts.
+    slim_server.pump_expire()

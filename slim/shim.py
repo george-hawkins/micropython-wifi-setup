@@ -57,8 +57,3 @@ def split(path):
 # os.path.dirname.
 def dirname(path):
     return split(path)[0]
-
-
-# time.perf_counter
-def perf_counter():
-    return ticks_ms() / 1000

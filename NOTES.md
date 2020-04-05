@@ -5,6 +5,18 @@ If you've created your venv before you open the project in PyCharm then it will 
 
 ---
 
+To test the timeout logic that expires sockets try:
+
+    $ telnet $ADDR 80
+
+Just leave it there or paste in e.g. just the first line of a request:
+
+    GET / HTTP/1.1
+
+Within 2 seconds (the time configured via `SlimConfig.timeout_sec`) the server will drop the connection.
+
+---
+
 It's not currently possible to report why connecting to an access point fails, e.g. an invalid password.
 
 For more details, see my MicroPython [forum post](https://forum.micropython.org/viewtopic.php?t=7942) about how `WLAN.status()` currently works.

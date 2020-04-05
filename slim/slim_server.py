@@ -83,7 +83,7 @@ class SlimServer:
                 self._config, tcp_client, process_request=self._process_request_modules
             )
         else:  # Else process the existing request.
-            # TODO: add in time-out logic. See lines 115 and 133 onward in
-            #  https://github.com/jczic/MicroWebSrv2/blob/d8663f6/MicroWebSrv2/libs/XAsyncSockets.py
-            #  Be careful - this about time.ticks_diff (under the covers ExpireTimeSec involves time.ticks_ms / 1000).
             self._socket_pool.pump(s, event)
+
+    def pump_expire(self):
+        self._socket_pool.pump_expire()
