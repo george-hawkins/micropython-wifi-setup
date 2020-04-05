@@ -1,5 +1,4 @@
 from os import stat
-from time import ticks_ms
 
 
 # This file contains functions and constants that exist in CPython but don't exist in MicroPython 1.12.

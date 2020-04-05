@@ -54,7 +54,7 @@ def request_access_points(request):
 
 
 @WebRoute(HttpMethod.POST, "/api/access-point")
-def request_authenticate(request):
+def request_access_point(request):
     data = request.GetPostedURLEncodedForm()
     print("Data", data)
     bssid = data.get("bssid", None)
@@ -62,15 +62,16 @@ def request_authenticate(request):
     if bssid and password:
         print("BSSID", bssid)
         print("Password", password)
-        request.Response.ReturnOkJSON({ "message": "192.168.0.xxx" })
+        request.Response.ReturnOkJSON({"message": "192.168.0.xxx"})
     else:
         request.Response.ReturnBadRequest()
 
 
 _NO_CONTENT = 204
 
+
 @WebRoute(HttpMethod.POST, "/api/alive")
-def request_authenticate(request):
+def request_alive(request):
     data = request.GetPostedURLEncodedForm()
     timeout = data.get("timeout", None)
     if timeout:
