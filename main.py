@@ -15,6 +15,8 @@ import select
 
 from binascii import hexlify
 
+from schedule import Scheduler, CancelJob
+
 
 SSID = b"ssid"
 PASSWORD = b"password"
@@ -59,26 +61,49 @@ def request_access_point(request):
     print("Data", data)
     bssid = data.get("bssid", None)
     password = data.get("password", None)
-    if bssid and password:
-        print("BSSID", bssid)
-        print("Password", password)
-        request.Response.ReturnOkJSON({"message": "192.168.0.xxx"})
-    else:
+    if not bssid or not password:
         request.Response.ReturnBadRequest()
+        return
+
+    print("BSSID", bssid)
+    print("Password", password)
+    request.Response.ReturnOkJSON({"message": "192.168.0.xxx"})
 
 
 _NO_CONTENT = 204
+
+# If a client specifies a keep-alive period of Xs then they must ping again within Xs plus a fixed "tolerance".
+_TOLERANCE = 1
+
+
+schedule = Scheduler()
+timeout_job = None
+
+
+def timed_out():
+    print("Keep-alive timeout expired.")
+    # At this point a non-test server would shutdown.
+    global timeout_job
+    timeout_job = None
+    return CancelJob  # Tell scheduler that we want one-shot behavior.
 
 
 @WebRoute(HttpMethod.POST, "/api/alive")
 def request_alive(request):
     data = request.GetPostedURLEncodedForm()
     timeout = data.get("timeout", None)
-    if timeout:
-        print("Timeout", timeout)
-        request.Response.Return(_NO_CONTENT)
-    else:
+    if not timeout:
         request.Response.ReturnBadRequest()
+        return
+
+    print("Timeout", timeout)
+    timeout = int(timeout) + _TOLERANCE
+    global timeout_job
+    if timeout_job:
+        schedule.cancel_job(timeout_job)
+    timeout_job = schedule.every(timeout).seconds.do(timed_out)
+
+    request.Response.Return(_NO_CONTENT)
 
 
 # ----------------------------------------------------------------------
@@ -119,3 +144,4 @@ while True:
 
     # Give things a chance to check for the expiration of timeouts.
     slim_server.pump_expire()
+    schedule.run_pending()

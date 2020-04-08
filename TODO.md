@@ -16,3 +16,6 @@ And remove my Logger class.
 Show shutdown spinner until first GET access-points result (irrespective of 0 rows or failure) maybe rename the `alive` variable that controls this to `waiting` (although `alive` is kind of OK - maybe just change the `#shutdown` in the HTML to `#waiting` or `#spinning`).
 
 Move things into `lib` with `slim`, `micro_srv_2`, `logging`, `shim.py` and `schedule` at top level.
+
+Is there a standard Angular way to not make a request if the last such request hasn't completed yet?
+See use of `fetching` in `getAccessPoints` in https://github.com/george-hawkins/wifi-setup-material/blob/master/src/app/access-points/access-points.component.ts
