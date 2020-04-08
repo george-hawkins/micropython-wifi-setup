@@ -5,6 +5,11 @@
 import sys
 from time import ticks_ms, ticks_diff, ticks_add
 
+import logging
+
+
+_logger = logging.getLogger("xasync")
+
 
 # ============================================================================
 # ===( XClosedReason )========================================================
@@ -73,6 +78,11 @@ class XAsyncSocket:
         if self._expire_time_millis:
             diff = ticks_diff(ticks_ms(), self._expire_time_millis)
             if diff > 0:
+                _logger.warning(
+                    "connection from {}:{} expired".format(
+                        self._cliAddr[0], self._cliAddr[1]
+                    )
+                )
                 self._close(XClosedReason.Timeout)
 
     # ------------------------------------------------------------------------

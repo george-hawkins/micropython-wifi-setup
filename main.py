@@ -6,7 +6,6 @@ from slim.options_module import OptionsModule
 from slim.slim_server import SlimServer
 from slim.util import print_select_event, access, sync_wlan_connect
 from slim.web_route_module import WebRouteModule
-from slim.logger import Logger
 from slim.slim_config import SlimConfig
 
 import btree
@@ -111,13 +110,9 @@ def request_alive(request):
 
 poller = select.poll()
 
-logger = Logger()
+slim_server = SlimServer(SlimConfig(), poller)
 
-config = SlimConfig(logger=logger)
-
-slim_server = SlimServer(config, poller)
-
-slim_server.add_module("webroute", WebRouteModule(logger))
+slim_server.add_module("webroute", WebRouteModule())
 # fmt: off
 slim_server.add_module("fileserver", FileserverModule({
     "html": "text/html",

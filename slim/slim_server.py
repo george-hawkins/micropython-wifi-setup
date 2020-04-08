@@ -2,9 +2,14 @@ import select
 from collections import OrderedDict
 from socket import socket
 
+import logging
+
 from slim.micro_web_srv_2.http_request import HttpRequest
 from slim.micro_web_srv_2.libs.xasync_sockets import XBufferSlot, XAsyncTCPClient
 from slim.single_socket_pool import SingleSocketPool
+
+
+_logger = logging.getLogger("server")
 
 
 class SlimServer:
@@ -20,7 +25,6 @@ class SlimServer:
     # Python uses "" to refer to INADDR_ANY, i.e. all interfaces.
     def __init__(self, config, poller, address="", port=80):
         self._config = config
-        self._logger = config.logger
         self._server_socket = self._create_server_socket(address, port)
 
         poller.register(
@@ -44,7 +48,7 @@ class SlimServer:
                 if r is self.RESPONSE_PENDING or request.Response.HeadersSent:
                     return
             except Exception as ex:
-                self._logger.error(
+                _logger.error(
                     'Exception in request handler of module "%s" (%s).' % (modName, ex)
                 )
 

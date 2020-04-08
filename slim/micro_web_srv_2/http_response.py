@@ -5,6 +5,11 @@ from os import stat
 import json
 import sys
 
+import logging
+
+
+_logger = logging.getLogger("response")
+
 
 def _read_local(filename):
     from slim.shim import join, dirname, read_text
@@ -70,7 +75,6 @@ class HttpResponse:
         self._not_found_url = config.not_found_url
         self._allow_all_origins = config.allow_all_origins
         self._server_name = config.server_name
-        self._logger = config.logger
 
         self._request = request
         self._xasCli = request.XAsyncTCPClient
@@ -107,7 +111,7 @@ class HttpResponse:
             except Exception as e:
                 sys.print_exception(e)
                 self._xasCli.Close()
-                self._logger.error(
+                _logger.error(
                     'Stream cannot be read for request "%s".' % self._request._path
                 )
                 return
@@ -164,7 +168,7 @@ class HttpResponse:
 
     def _makeBaseResponseHdr(self, code):
         reason = self._reason(code)
-        self._logger.debug(
+        _logger.info(
             "From %s:%s %s %s >> [%s] %s"
             % (
                 self._xasCli.CliAddr[0],
@@ -209,7 +213,7 @@ class HttpResponse:
         if not isinstance(upgrade, str) or len(upgrade) == 0:
             raise ValueError('"upgrade" must be a not empty string.')
         if self._hdrSent:
-            self._logger.warning(
+            _logger.warning(
                 'Response headers already sent for request "%s".' % self._request._path
             )
             return
@@ -227,7 +231,7 @@ class HttpResponse:
         if not hasattr(stream, "readinto") or not hasattr(stream, "close"):
             raise ValueError('"stream" must be a readable buffer protocol object.')
         if self._hdrSent:
-            self._logger.warning(
+            _logger.warning(
                 'Response headers already sent for request "%s".' % self._request._path
             )
             try:
@@ -272,7 +276,7 @@ class HttpResponse:
         if not isinstance(code, int) or code <= 0:
             raise ValueError('"code" must be a positive integer.')
         if self._hdrSent:
-            self._logger.warning(
+            _logger.warning(
                 'Response headers already sent for request "%s".' % self._request._path
             )
             return

@@ -1,12 +1,16 @@
+import logging
+
 from slim.micro_web_srv_2.web_route import ResolveRoute
 from slim.slim_server import SlimServer
+
+
+_logger = logging.getLogger("route_module")
 
 
 class WebRouteModule:
     _MAX_CONTENT_LEN = 16 * 1024  # Content len from MicroWebSrv2.SetEmbeddedConfig
 
-    def __init__(self, logger, max_content_len=_MAX_CONTENT_LEN):
-        self._logger = logger
+    def __init__(self, max_content_len=_MAX_CONTENT_LEN):
         self._max_content_len = max_content_len
 
     def OnRequest(self, request):
@@ -29,7 +33,7 @@ class WebRouteModule:
                     request.async_data_recv(size=cnt_len, on_content_recv=route_request)
                     return SlimServer.RESPONSE_PENDING
                 except:
-                    self._logger.error(
+                    _logger.error(
                         "Not enough memory to read a content of %s bytes." % cnt_len
                     )
                     request.Response.ReturnServiceUnavailable()
@@ -45,12 +49,8 @@ class WebRouteModule:
             else:
                 route_result.Handler(request)
             if not request.Response.HeadersSent:
-                self._logger.warning(
-                    "No response was sent from route %s." % route_result
-                )
+                _logger.warning("No response was sent from route %s." % route_result)
                 request.Response.ReturnNotImplemented()
         except Exception as ex:
-            self._logger.error(
-                "Exception raised from route %s: %s" % (route_result, ex)
-            )
+            _logger.error("Exception raised from route %s: %s" % (route_result, ex))
             request.Response.ReturnInternalServerError()

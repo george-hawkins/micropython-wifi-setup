@@ -4,6 +4,12 @@
 import re
 import sys
 
+import logging
+
+
+_logger = logging.getLogger("route")
+
+
 # ============================================================================
 # ===( @WebRoute decorator )==================================================
 # ============================================================================
@@ -16,7 +22,7 @@ def WebRoute(method=None, routePath=None):
 
     def decorated(handler):
         RegisterRoute(handler, method, routePath)
-        print(" + [@WebRoute] %s %s" % (method, routePath))
+        _logger.info("[@WebRoute] %s %s" % (method, routePath))
         return handler
 
     return decorated

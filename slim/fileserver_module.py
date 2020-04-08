@@ -1,4 +1,9 @@
+import logging
+
 from slim.shim import isdir, exists
+
+
+_logger = logging.getLogger("fileserver_module")
 
 
 class FileserverModule:
@@ -24,6 +29,7 @@ class FileserverModule:
                     filename = compressed
                 request.Response.ReturnFile(filename)
             else:
+                _logger.warning("no MIME type for {}".format(filename))
                 request.Response.ReturnForbidden()
         else:
             request.Response.ReturnNotFound()
