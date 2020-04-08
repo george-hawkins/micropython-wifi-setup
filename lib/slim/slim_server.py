@@ -4,8 +4,8 @@ from socket import socket
 
 import logging
 
-from slim.micro_web_srv_2.http_request import HttpRequest
-from slim.micro_web_srv_2.libs.xasync_sockets import XBufferSlot, XAsyncTCPClient
+from micro_web_srv_2.http_request import HttpRequest
+from micro_web_srv_2.libs.xasync_sockets import XBufferSlot, XAsyncTCPClient
 from slim.single_socket_pool import SingleSocketPool
 
 

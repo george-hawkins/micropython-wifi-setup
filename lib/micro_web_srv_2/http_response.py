@@ -12,7 +12,7 @@ _logger = logging.getLogger("response")
 
 
 def _read_local(filename):
-    from slim.shim import join, dirname, read_text
+    from shim import join, dirname, read_text
 
     return read_text(join(dirname(__file__), filename))
 

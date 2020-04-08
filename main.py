@@ -1,10 +1,10 @@
 # The compiler needs a lot of space to process XAsyncSockets etc. so
 # import them first before anything else starts to consume memory.
-from slim.micro_web_srv_2.web_route import WebRoute, HttpMethod
+from micro_web_srv_2.web_route import WebRoute, HttpMethod
 from slim.fileserver_module import FileserverModule
 from slim.options_module import OptionsModule
 from slim.slim_server import SlimServer
-from slim.util import print_select_event, access, sync_wlan_connect
+from util import print_select_event, access, sync_wlan_connect
 from slim.web_route_module import WebRouteModule
 from slim.slim_config import SlimConfig
 

@@ -1,6 +1,6 @@
 import logging
 
-from slim.micro_web_srv_2.web_route import ResolveRoute
+from micro_web_srv_2.web_route import ResolveRoute
 from slim.slim_server import SlimServer
 
 
