@@ -1,5 +1,5 @@
 class SlimConfig:
-    _DEFAULT_TIMEOUT = 2  # 2 seconds (originally from MicroWebSrv2.__init__).
+    _DEFAULT_TIMEOUT = 4  # 4 seconds - 2 seconds is too low for some mobile browsers.
 
     def __init__(
         self,
