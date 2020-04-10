@@ -3,6 +3,7 @@
 
 import socket
 import sys
+import select
 
 
 class MicroDNSSrv:
@@ -11,7 +12,8 @@ class MicroDNSSrv:
     # ===( Utils )================================================================
     # ============================================================================
 
-    def _ipV4StrToBytes(ipStr):
+    @staticmethod
+    def ipV4StrToBytes(ipStr):
         try:
             parts = ipStr.split(".")
             if len(parts) == 4:
@@ -24,6 +26,7 @@ class MicroDNSSrv:
 
     # ----------------------------------------------------------------------------
 
+    @staticmethod
     def _getAskedDomainName(packet):
         try:
             queryType = (packet[2] >> 3) & 15
@@ -46,10 +49,9 @@ class MicroDNSSrv:
 
     # ----------------------------------------------------------------------------
 
+    @staticmethod
     def _getPacketAnswerA(packet, ipV4Bytes):
-
         try:
-
             queryEndPos = 12
             while True:
                 domPartLen = packet[queryEndPos]
@@ -75,7 +77,6 @@ class MicroDNSSrv:
                     ipV4Bytes,
                 ]
             )  # Answer data
-
         except:
             pass
 
@@ -85,22 +86,28 @@ class MicroDNSSrv:
     # ===( Server Thread )========================================================
     # ============================================================================
 
-    def process_request(self):
+    def pump(self, s, event):
+        if s != self._server:
+            return
+
+        if event != select.POLLIN:
+            raise Exception("unexpected event {} on server socket".format(event))
+
         try:
             packet, cliAddr = self._server.recvfrom(256)
-            domName = MicroDNSSrv._getAskedDomainName(packet)
+            domName = self._getAskedDomainName(packet)
             if domName:
                 domName = domName.lower()
                 ipB = self._resolve(domName)
                 if ipB:
-                    packet = MicroDNSSrv._getPacketAnswerA(packet, ipB)
+                    packet = self._getPacketAnswerA(packet, ipB)
                     if packet:
                         self._server.sendto(packet, cliAddr)
         except Exception as e:
             sys.print_exception(e)
 
     # ============================================================================
-    # ===( Functions )============================================================
+    # ===( Constructor )==========================================================
     # ============================================================================
 
     def __init__(self, resolve, poller, address="", port=53):
@@ -110,6 +117,10 @@ class MicroDNSSrv:
         )
         self._server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._server.bind((address, port))
+
+        poller.register(
+            self._server, select.POLLIN | select.POLLERR | select.POLLHUP
+        )
 
     # ============================================================================
     # ============================================================================

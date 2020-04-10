@@ -1,7 +1,9 @@
 # The compiler needs a lot of space to process the server classes etc. so
 # import them first before anything else starts to consume memory.
+from micro_dns_srv import MicroDNSSrv
 from slim.fileserver_module import FileserverModule
 from slim.options_module import OptionsModule
+from slim.slim_config import SlimConfig
 from slim.slim_server import SlimServer
 from slim.web_route_module import WebRouteModule
 from micro_web_srv_2.web_route import WebRoute, HttpMethod
@@ -22,8 +24,16 @@ _schedule = Scheduler()
 _connect = None
 _alive = True
 
+# A captive portal tries to push clients to a login page. This is typically done by
+# redirecting all DNS requests to the captive portal web server and then all HTTP
+# requests to the login page.
+# For an end user, trying to access a web page and then being redirected to a login page
+# is a bit confusing so most browsers and OSes these days try to detect this upfront and
+# immediately present the login page. For an example of how this is done, see:
+# https://www.chromium.org/chromium-os/chromiumos-design-docs/network-portal-detection
 
-# A captive portal that lets you configure access to your network.
+# Rather than present a login page, this is a captive portal that lets you configure
+# access to your network.
 def portal(essid, connect):
     global _connect
     _connect = connect
@@ -32,7 +42,10 @@ def portal(essid, connect):
 
     poller = select.poll()
 
-    slim_server = SlimServer(poller)
+    # Rather than a 404 (Not Found) response redirect all not found requests to "/".
+    config = SlimConfig(not_found_url="/")
+
+    slim_server = SlimServer(poller, config=config)
 
     slim_server.add_module("webroute", WebRouteModule())
     # fmt: off
@@ -46,6 +59,15 @@ def portal(essid, connect):
     # fmt: on
     slim_server.add_module("options", OptionsModule())
 
+    addr = _ap.ifconfig()[0]
+    addrBytes = MicroDNSSrv.ipV4StrToBytes(addr)
+
+    def resolve(name):
+        print("Resolving", name)
+        return addrBytes
+
+    dns = MicroDNSSrv(resolve, poller)
+
     # If no timeout is given `ipoll` blocks and the for-loop goes forever.
     # With a timeout the for-loop exits every time the timeout expires.
     # I.e. the underlying iterable reports that it has no more elements.
@@ -58,9 +80,9 @@ def portal(essid, connect):
             if event & ~(select.POLLIN | select.POLLOUT):
                 print_select_event(event)
             slim_server.pump(s, event)
+            dns.pump(s, event)
 
-        # Give things a chance to check for the expiration of timeouts.
-        slim_server.pump_expire()
+        slim_server.pump_expire()  # Expire inactive client sockets.
         _schedule.run_pending()
 
     _ap.active(False)
