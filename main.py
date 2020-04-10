@@ -1,142 +1,95 @@
-# The compiler needs a lot of space to process XAsyncSockets etc. so
-# import them first before anything else starts to consume memory.
-from micro_web_srv_2.web_route import WebRoute, HttpMethod
-from slim.fileserver_module import FileserverModule
-from slim.options_module import OptionsModule
-from slim.slim_server import SlimServer
-from util import print_select_event, access, sync_wlan_connect
-from slim.web_route_module import WebRouteModule
-from slim.slim_config import SlimConfig
+from util import access, sync_wlan_connect
 
+import micropython
+import gc
 import btree
 import network
-import select
-
-from binascii import hexlify
-
-from schedule import Scheduler, CancelJob
 
 
-SSID = b"ssid"
-PASSWORD = b"password"
-
-f = access("credentials")
-db = btree.open(f)
-
-if SSID not in db:
-    raise Exception("WiFi credentials have not been configured")
-# If this exception occurs, go to the REPL and enter:
-# >>> db[SSID] = "My WiFi network"
-# >>> db[PASSWORD] = "My WiFi password"
-# >>> db.flush()
-# And then reset the board.
-
-ssid = db[SSID]
-password = db[PASSWORD]
-
-sta = network.WLAN(network.STA_IF)
-sta.active(True)
-sta.connect(ssid, password)
-
-if not sync_wlan_connect(sta):
-    raise Exception(
-        "Failed to conntect to {}. Check your password and try again.".format(ssid)
-    )
-
-print("Connected to {} with address {}".format(ssid, sta.ifconfig()[0]))
-
-# ----------------------------------------------------------------------
+gc.collect()
+micropython.mem_info()
 
 
-@WebRoute(HttpMethod.GET, "/api/access-points")
-def request_access_points(request):
-    points = [(p[0], hexlify(p[1])) for p in sta.scan()]
-    request.Response.ReturnOkJSON(points)
+class Credentials:
+    _SSID = b"ssid"
+    _PASSWORD = b"password"
+    _CREDENTIALS = "credentials"
+
+    def __init__(self, filename=_CREDENTIALS):
+        self._filename = filename
+
+    def get(self):
+        def action(db):
+            ssid = db.get(self._SSID)
+            password = db.get(self._PASSWORD)
+
+            return (ssid, password) if ssid and password else (None, None)
+
+        return self._db_action(action)
+
+    def put(self, ssid, password):
+        def action(db):
+            db[self._SSID] = ssid
+            db[self._PASSWORD] = password
+        self._db_action(action)
+
+    def clear(self):
+        def action(db):
+            del db[self._SSID]
+            del db[self._PASSWORD]
+        self._db_action(action)
+
+    def _db_action(self, action):
+        with access(self._filename) as f:
+            db = btree.open(f)  # Btree doesn't support `with`.
+            try:
+                return action(db)
+            finally:
+                # Note that closing the DB does a flush.
+                db.close()
 
 
-@WebRoute(HttpMethod.POST, "/api/access-point")
-def request_access_point(request):
-    data = request.GetPostedURLEncodedForm()
-    print("Data", data)
-    bssid = data.get("bssid", None)
-    password = data.get("password", None)
-    if not bssid or not password:
-        request.Response.ReturnBadRequest()
-        return
+class WiFiSetup:
+    def __init__(self, essid):
+        self._essid = essid
 
-    print("BSSID", bssid)
-    print("Password", password)
-    request.Response.ReturnOkJSON({"message": "192.168.0.xxx"})
+        self._credentials = Credentials()
+        self._sta = network.WLAN(network.STA_IF)
+        self._sta.active(True)
 
+    def setup(self):
+        if not self._connect_previous():
+            from connect_portal import portal
+            portal(self._essid, self._connect_new)
 
-_NO_CONTENT = 204
+    def _connect_previous(self):
+        ssid, password = self._credentials.get()
 
-# If a client specifies a keep-alive period of Xs then they must ping again within Xs plus a fixed "tolerance".
-_TOLERANCE = 1
+        return self._connect(ssid, password) if ssid else False
 
+    def _connect_new(self, ssid, password):
+        if not self._connect(ssid, password):
+            return False
 
-schedule = Scheduler()
-timeout_job = None
+        self._credentials.put(ssid, password)
+        return True
 
+    def _connect(self, ssid, password):
+        print("attempting to connect to {}".format(ssid))
 
-def timed_out():
-    print("Keep-alive timeout expired.")
-    # At this point a non-test server would shutdown.
-    global timeout_job
-    timeout_job = None
-    return CancelJob  # Tell scheduler that we want one-shot behavior.
+        self._sta.connect(ssid, password)
 
+        if not sync_wlan_connect(self._sta):
+            print("failed to connect")
+            return False
 
-@WebRoute(HttpMethod.POST, "/api/alive")
-def request_alive(request):
-    data = request.GetPostedURLEncodedForm()
-    timeout = data.get("timeout", None)
-    if not timeout:
-        request.Response.ReturnBadRequest()
-        return
-
-    print("Timeout", timeout)
-    timeout = int(timeout) + _TOLERANCE
-    global timeout_job
-    if timeout_job:
-        schedule.cancel_job(timeout_job)
-    timeout_job = schedule.every(timeout).seconds.do(timed_out)
-
-    request.Response.Return(_NO_CONTENT)
+        print("Connected to {} with address {}".format(ssid, self._sta.ifconfig()[0]))
+        return True
 
 
-# ----------------------------------------------------------------------
-
-
-poller = select.poll()
-
-slim_server = SlimServer(SlimConfig(), poller)
-
-slim_server.add_module("webroute", WebRouteModule())
-# fmt: off
-slim_server.add_module("fileserver", FileserverModule({
-    "html": "text/html",
-    "css": "text/css",
-    "js": "application/javascript",
-    "woff2": "font/woff2",
-    "ico": "image/x-icon",
-}))
-# fmt: on
-slim_server.add_module("options", OptionsModule())
-
-# If no timeout is given `ipoll` blocks and the for-loop goes forever.
-# With a timeout the for-loop exits every time the timeout expires.
-# I.e. the underlying iterable reports that it has no more elements.
-while True:
-    # Under the covers polling is done with a non-blocking ioctl call and the timeout
-    # (or blocking forever) is implemented with a hard loop, so there's nothing to be
-    # gained, e.g. reduced power consumption, by using a timeout greater than 0.
-    for (s, event) in poller.ipoll(0):
-        # If event has bits other than POLLIN or POLLOUT then print it.
-        if event & ~(select.POLLIN | select.POLLOUT):
-            print_select_event(event)
-        slim_server.pump(s, event)
-
-    # Give things a chance to check for the expiration of timeouts.
-    slim_server.pump_expire()
-    schedule.run_pending()
+# You should give every device a unique name to use as the access point name.
+setup = WiFiSetup("ding-5cd80b3")
+setup.setup()
+del setup
+gc.collect()
+micropython.mem_info()

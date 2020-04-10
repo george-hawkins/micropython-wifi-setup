@@ -1,5 +1,5 @@
-ESP32-Setup
-===========
+Notes
+=====
 
 If you've created your venv before you open the project in PyCharm then it will automatically pickup the Python version from the venv. Otherwise, go toSettings / Project:my-project-name / Project Interpreter - click cog and select _Add_, it should automatically select _Existing environment_ and the interpreter in the venv - you just have to press OK.
 

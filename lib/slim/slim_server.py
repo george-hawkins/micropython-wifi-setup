@@ -7,7 +7,7 @@ import logging
 from micro_web_srv_2.http_request import HttpRequest
 from micro_web_srv_2.libs.xasync_sockets import XBufferSlot, XAsyncTCPClient
 from slim.single_socket_pool import SingleSocketPool
-
+from slim.slim_config import SlimConfig
 
 _logger = logging.getLogger("server")
 
@@ -23,7 +23,7 @@ class SlimServer:
     _SLOT_SIZE = 1024
 
     # Python uses "" to refer to INADDR_ANY, i.e. all interfaces.
-    def __init__(self, config, poller, address="", port=80):
+    def __init__(self, poller, address="", port=80, config = SlimConfig()):
         self._config = config
         self._server_socket = self._create_server_socket(address, port)
 
