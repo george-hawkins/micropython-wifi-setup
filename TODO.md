@@ -6,6 +6,10 @@ Make `lib/util.py` a less generic name or roll up into some other class.
 
 Remove OptionsModule.
 
+Test with UTF-8 access point names.
+
+Try using `globals()`, `locals()` and anything similar to find out what holds onto memory after portal has exited.
+
 Maybe rename wifi-setup-material to material-wifi-setup - and grep for all old usages of wifi-setup-material, e.g. in `update-www`.
 
 Document known issues:

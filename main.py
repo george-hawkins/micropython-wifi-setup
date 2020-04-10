@@ -69,10 +69,10 @@ class WiFiSetup:
 
     def _connect_new(self, ssid, password):
         if not self._connect(ssid, password):
-            return False
+            return None
 
         self._credentials.put(ssid, password)
-        return True
+        return self._sta.ifconfig()[0]
 
     def _connect(self, ssid, password):
         print("attempting to connect to {}".format(ssid))
@@ -91,5 +91,7 @@ class WiFiSetup:
 setup = WiFiSetup("ding-5cd80b3")
 setup.setup()
 del setup
+
+print("WiFi is setup")
 gc.collect()
 micropython.mem_info()

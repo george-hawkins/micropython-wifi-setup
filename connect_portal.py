@@ -20,6 +20,7 @@ _ap = network.WLAN(network.AP_IF)
 _schedule = Scheduler()
 
 _connect = None
+_alive = True
 
 
 # A captive portal that lets you configure access to your network.
@@ -48,7 +49,7 @@ def portal(essid, connect):
     # If no timeout is given `ipoll` blocks and the for-loop goes forever.
     # With a timeout the for-loop exits every time the timeout expires.
     # I.e. the underlying iterable reports that it has no more elements.
-    while True:
+    while _alive:
         # Under the covers polling is done with a non-blocking ioctl call and the timeout
         # (or blocking forever) is implemented with a hard loop, so there's nothing to be
         # gained, e.g. reduced power consumption, by using a timeout greater than 0.
@@ -62,6 +63,8 @@ def portal(essid, connect):
         slim_server.pump_expire()
         _schedule.run_pending()
 
+    _ap.active(False)
+
 
 @WebRoute(HttpMethod.GET, "/api/access-points")
 def request_access_points(request):
@@ -73,15 +76,19 @@ def request_access_points(request):
 def request_access_point(request):
     data = request.GetPostedURLEncodedForm()
     print("Data", data)
-    bssid = data.get("bssid", None)
+    ssid = data.get("ssid", None)
     password = data.get("password", None)
-    if not bssid or not password:
+    if not ssid or not password:
         request.Response.ReturnBadRequest()
         return
 
-    print("BSSID", bssid)
+    print("SSID", ssid)
     print("Password", password)
-    request.Response.ReturnOkJSON({"message": "192.168.0.xxx"})
+    result = _connect(ssid, password)
+    if not result:
+        request.Response.ReturnForbidden()
+    else:
+        request.Response.ReturnOkJSON({"message": result})
 
 
 _NO_CONTENT = 204
@@ -95,7 +102,8 @@ timeout_job = None
 
 def timed_out():
     print("Keep-alive timeout expired.")
-    # At this point a non-test server would shutdown.
+    global _alive
+    _alive = False
     global timeout_job
     timeout_job = None
     return CancelJob  # Tell scheduler that we want one-shot behavior.

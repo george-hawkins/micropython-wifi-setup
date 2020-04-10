@@ -68,4 +68,8 @@ There are more examples in [`request-examples.md`](request-examples.md).
 Notes
 -----
 
-The web server code is derived from [MicroWebSrv2](https://github.com/jczic/MicroWebSrv2) by Jean-Christophe Bos at HC<sup>2</sup> which is licensed under the [MIT license](https://github.com/jczic/MicroWebSrv2/blob/master/LICENSE.md).
+The web server code is derived from [MicroWebSrv2](https://github.com/jczic/MicroWebSrv2) authored by Jean-Christophe Bos at HC<sup>2</sup> and is licensed under the [MIT license](https://github.com/jczic/MicroWebSrv2/blob/master/LICENSE.md).
+
+The schedule code is derived from [schedule](https://github.com/rguillon/schedule) authored by Renaud Guillon and is licensed under the [MIT license](https://github.com/rguillon/schedule/blob/master/LICENSE.txt).
+
+The logging package is [micropython-lib/logging](https://github.com/micropython/micropython-lib/blob/master/logging) authored by Paul Sokolovsky (aka Pfalcon) and is licensed under the [MIT license](https://github.com/micropython/micropython-lib/blob/master/logging/setup.py) (see `license`).
