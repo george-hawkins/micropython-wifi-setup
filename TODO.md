@@ -4,6 +4,8 @@ Remove `print` calls in `main.py` or replace with logging calls.
 
 Make `lib/util.py` a less generic name or roll up into some other class.
 
+Are you closing the DNS and slim-server server sockets?
+
 Remove OptionsModule.
 
 Test with UTF-8 access point names.
