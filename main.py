@@ -25,20 +25,27 @@ class Credentials:
             ssid = db.get(self._SSID)
             password = db.get(self._PASSWORD)
 
-            return (ssid, password) if ssid and password else (None, None)
+            return (ssid, password) if ssid else (None, None)
 
         return self._db_action(action)
 
     def put(self, ssid, password):
         def action(db):
             db[self._SSID] = ssid
-            db[self._PASSWORD] = password
+            if password:
+                db[self._PASSWORD] = password
+            else:
+                self._clear_password(db)
         self._db_action(action)
+
+    def _clear_password(self, db):
+        if self._PASSWORD in db:
+            del db[self._PASSWORD]
 
     def clear(self):
         def action(db):
             del db[self._SSID]
-            del db[self._PASSWORD]
+            self._clear_password(db)
         self._db_action(action)
 
     def _db_action(self, action):
@@ -58,9 +65,11 @@ class WiFiSetup:
 
     # The default `message` function returns the device's IP address but
     # one could provide a function that e.g. returned an MQTT topic ID.
-    def __init__(self, essid, message=_default_message):
+    def __init__(self, essid, message=None):
         self._essid = essid
-        self._message = message
+        # You can't have a static method as a default argument
+        # https://stackoverflow.com/a/21672157/245602
+        self._message = message if message else self._default_message
 
         self._credentials = Credentials()
         self._sta = network.WLAN(network.STA_IF)
@@ -86,6 +95,7 @@ class WiFiSetup:
     def _connect(self, ssid, password):
         print("attempting to connect to {}".format(ssid))
 
+        # Password may be none if the network is open.
         self._sta.connect(ssid, password)
 
         if not sync_wlan_connect(self._sta):

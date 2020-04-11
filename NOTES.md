@@ -51,7 +51,7 @@ Maybe it makes no difference _once things are compiled_ but simply ensures that 
 
 You can dump the visible access points like so:
 
-    >>> json.dumps([(t[0], binascii.hexlify(t[1]), t[2]) for t in sta.scan()])
+    >>> json.dumps([(t[0], binascii.hexlify(t[1]), t[2], t[3], t[4], t[5]) for t in sta.scan()])
 
 When using the REPL, it escapes single quotes, i.e. "Foo's AP" is displayed as "Foo\'s AP", which is invalid JSON. This is just a REPL artifact. To get the un-munged JSOM:
 
@@ -61,7 +61,7 @@ When using the REPL, it escapes single quotes, i.e. "Foo's AP" is displayed as "
     >>> sta = network.WLAN(network.STA_IF)
     >>> sta.active(True)
     >>> with open('data.json', 'w') as f:
-    >>>     json.dump([(t[0], binascii.hexlify(t[1]), t[2]) for t in sta.scan()], f)
+    >>>     json.dump([(t[0], binascii.hexlify(t[1]), t[2], t[3], t[4], t[5]) for t in sta.scan()], f)
 
     $ pyboard.py --device $PORT -f cp :data.json data.json
 

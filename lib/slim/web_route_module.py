@@ -1,3 +1,5 @@
+import sys
+
 import logging
 
 from micro_web_srv_2.web_route import ResolveRoute
@@ -52,5 +54,6 @@ class WebRouteModule:
                 _logger.warning("No response was sent from route %s." % route_result)
                 request.Response.ReturnNotImplemented()
         except Exception as ex:
+            sys.print_exception(ex)
             _logger.error("Exception raised from route %s: %s" % (route_result, ex))
             request.Response.ReturnInternalServerError()

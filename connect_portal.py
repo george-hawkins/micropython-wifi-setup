@@ -55,6 +55,7 @@ def portal(essid, connect):
         "js": "application/javascript",
         "woff2": "font/woff2",
         "ico": "image/x-icon",
+        "svg": "image/svg+xml"
     }))
     # fmt: on
     slim_server.add_module("options", OptionsModule())
@@ -90,7 +91,8 @@ def portal(essid, connect):
 
 @WebRoute(HttpMethod.GET, "/api/access-points")
 def request_access_points(request):
-    points = [(p[0], hexlify(p[1])) for p in _ap.scan()]
+    # Tuples are  of the form (SSID, BSSID, channel, RSSI, authmode, hidden).
+    points = [(p[0], p[3], p[4]) for p in _ap.scan()]
     request.Response.ReturnOkJSON(points)
 
 
@@ -99,13 +101,12 @@ def request_access_point(request):
     data = request.GetPostedURLEncodedForm()
     print("Data", data)
     ssid = data.get("ssid", None)
-    password = data.get("password", None)
-    if not ssid or not password:
+    if not ssid:
         request.Response.ReturnBadRequest()
         return
 
-    print("SSID", ssid)
-    print("Password", password)
+    password = data.get("password", None)
+
     result = _connect(ssid, password)
     if not result:
         request.Response.ReturnForbidden()
