@@ -10,6 +10,8 @@ gc.collect()
 micropython.mem_info()
 
 
+# Credentials uses `btree` to store and retrieve data. In retrospect it would
+# probably have been at least as easy to just write and read it as JSON.
 class Credentials:
     _SSID = b"ssid"
     _PASSWORD = b"password"
@@ -50,8 +52,15 @@ class Credentials:
 
 
 class WiFiSetup:
-    def __init__(self, essid):
+    @staticmethod
+    def _default_message(sta):
+        return sta.ifconfig()[0]
+
+    # The default `message` function returns the device's IP address but
+    # one could provide a function that e.g. returned an MQTT topic ID.
+    def __init__(self, essid, message=_default_message):
         self._essid = essid
+        self._message = message
 
         self._credentials = Credentials()
         self._sta = network.WLAN(network.STA_IF)
@@ -72,7 +81,7 @@ class WiFiSetup:
             return None
 
         self._credentials.put(ssid, password)
-        return self._sta.ifconfig()[0]
+        return self._message(self._sta)
 
     def _connect(self, ssid, password):
         print("attempting to connect to {}".format(ssid))
