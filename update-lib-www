@@ -1,0 +1,52 @@
+#!/bin/bash -e
+
+www=lib/wifi_setup/www
+material=../material-wifi-setup
+
+function fail {
+    echo "Error: $1" 1>&2
+    exit 1
+}
+
+# Check that material-wifi-setup been checked out and that @angular/cli been installed.
+[ -d $material ] || fail "expected to find material-wifi-setup checked out in $material"
+hash ng 2>/dev/null || fail '@angular/cli is not installed'
+
+# Make sure we don't destroy any local changes.
+[[ -z $(git status --short -- $www) ]] || fail "$www contains uncommitted changes"
+
+cd $material
+
+# Rebuild the distribution.
+rm -rf dist
+ng build --prod
+
+cd - > /dev/null
+
+# Move over the rebuilt distribution.
+git rm -q -r $www
+mv $material/dist/wifi-setup $www
+
+before=( $(du -hs $www) )
+
+# Search for files that are at least 1KiB.
+for file in $(find $www -type f -size +1k)
+do
+    # Without `--no-name`, gzip includes a timestamp meaning zipping the
+    # same file time twice results in results that look different to git.
+    gzip --best --no-name $file
+
+    # If the gzip makes little difference undo the compression.
+    pct=$(gzip --list $file | sed -n 's/.*\s\([0-9.-]\+\)%\s.*/\1/p')
+    if (( $(echo "$pct < 5" | bc -l ) ))
+    then
+        gunzip $file
+    fi
+done
+
+after=( $(du -hs $www) )
+
+echo "Info: reduced size of www from ${before[0]} to ${after[0]}"
+
+git add $www
+echo "Info: any changes are now ready to be committed"
