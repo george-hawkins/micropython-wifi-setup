@@ -11,9 +11,9 @@ import logging
 _logger = logging.getLogger("response")
 
 
-def _read_local(filename):
+# Read a file, given a path relative to the directory containing this `.py` file.
+def _read_relative(filename):
     from shim import join, dirname, read_text
-
     return read_text(join(dirname(__file__), filename))
 
 
@@ -67,7 +67,7 @@ class HttpResponse:
         505: "HTTP Version Not Supported",
     }
 
-    _CODE_CONTENT_TMPL = _read_local("status-code.html")
+    _CODE_CONTENT_TMPL = _read_relative("status-code.html")
 
     # ------------------------------------------------------------------------
 

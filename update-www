@@ -8,14 +8,16 @@ ng build --prod
 
 cd -
 
-# Move over the rebuilt distribution.
-rm -r www
-mv ../wifi-setup-material/dist/wifi-setup www
+www=lib/wifi_setup/www
 
-before=( $(du -hs www) )
+# Move over the rebuilt distribution.
+rm -r $www
+mv ../wifi-setup-material/dist/wifi-setup $www
+
+before=( $(du -hs $www) )
 
 # Search for files that are at least 1KiB.
-for file in $(find www -type f -size +1k)
+for file in $(find $www -type f -size +1k)
 do
     gzip --best $file
 
@@ -27,6 +29,6 @@ do
     fi
 done
 
-after=( $(du -hs www) )
+after=( $(du -hs $www) )
 
 echo "Info: reduced size of www from ${before[0]} to ${after[0]}"

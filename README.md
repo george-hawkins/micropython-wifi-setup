@@ -65,13 +65,17 @@ You'll see the request and response headers and [`www/index.html`](www/index.htm
 
 There are more examples in [`request-examples.md`](request-examples.md).
 
+To clear the credentials:
+
+    >>> from wifi_setup.credentials import Credentials; Credentials().clear()
+
 Notes
 -----
 
-The web server code is derived from [MicroWebSrv2](https://github.com/jczic/MicroWebSrv2) authored by Jean-Christophe Bos at HC<sup>2</sup> and is licensed under the [MIT license](https://github.com/jczic/MicroWebSrv2/blob/master/LICENSE.md).
+The web server code is derived from [MicroWebSrv2](https://github.com/jczic/MicroWebSrv2) authored by Jean-Christophe Bos at HC<sup>2</sup> and licensed under the [MIT license](https://github.com/jczic/MicroWebSrv2/blob/master/LICENSE.md).
 
 The DNS server code is derived from [MicroDNSSrv](https://github.com/jczic/MicroDNSSrv/), also authored by Jean-Christophe Bos and licensed under the MIT license.
 
-The schedule code is derived from [schedule](https://github.com/rguillon/schedule) authored by Renaud Guillon and is licensed under the [MIT license](https://github.com/rguillon/schedule/blob/master/LICENSE.txt).
+The schedule code is derived from [schedule](https://github.com/rguillon/schedule) authored by Renaud Guillon and licensed under the [MIT license](https://github.com/rguillon/schedule/blob/master/LICENSE.txt).
 
-The logging package is [micropython-lib/logging](https://github.com/micropython/micropython-lib/blob/master/logging) authored by Paul Sokolovsky (aka Pfalcon) and is licensed under the [MIT license](https://github.com/micropython/micropython-lib/blob/master/logging/setup.py) (see `license` key).
+The logging package is [micropython-lib/logging](https://github.com/micropython/micropython-lib/blob/master/logging) authored by Paul Sokolovsky (aka Pfalcon) and licensed under the [MIT license](https://github.com/micropython/micropython-lib/blob/master/logging/setup.py) (see `license` key).

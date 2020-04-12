@@ -8,8 +8,6 @@ from slim.slim_server import SlimServer
 from slim.web_route_module import WebRouteModule
 from micro_web_srv_2.web_route import WebRoute, HttpMethod
 
-from util import print_select_event
-
 import network
 import select
 
@@ -23,6 +21,13 @@ _schedule = Scheduler()
 
 _connect = None
 _alive = True
+
+
+# Find a file, given a path relative to the directory contain this `.py` file.
+def _get_relative(filename):
+    from shim import join, dirname
+    return join(dirname(__file__), filename)
+
 
 # A captive portal tries to push clients to a login page. This is typically done by
 # redirecting all DNS requests to the captive portal web server and then all HTTP
@@ -42,12 +47,14 @@ def portal(essid, connect):
 
     poller = select.poll()
 
-    # Rather than a 404 (Not Found) response redirect all not found requests to "/".
+    # Rather than a 404 (Not Found) response, redirect all not found requests to "/".
     config = SlimConfig(not_found_url="/")
 
     slim_server = SlimServer(poller, config=config)
 
     slim_server.add_module("webroute", WebRouteModule())
+
+    root = _get_relative("www")
     # fmt: off
     slim_server.add_module("fileserver", FileserverModule({
         "html": "text/html",
@@ -56,8 +63,9 @@ def portal(essid, connect):
         "woff2": "font/woff2",
         "ico": "image/x-icon",
         "svg": "image/svg+xml"
-    }))
+    }, root))
     # fmt: on
+
     slim_server.add_module("options", OptionsModule())
 
     addr = _ap.ifconfig()[0]
@@ -79,7 +87,7 @@ def portal(essid, connect):
         for (s, event) in poller.ipoll(0):
             # If event has bits other than POLLIN or POLLOUT then print it.
             if event & ~(select.POLLIN | select.POLLOUT):
-                print_select_event(event)
+                _print_select_event(event)
             slim_server.pump(s, event)
             dns.pump(s, event)
 
@@ -87,6 +95,23 @@ def portal(essid, connect):
         _schedule.run_pending()
 
     _ap.active(False)
+
+
+_POLL_EVENTS = {
+    select.POLLIN: "IN",
+    select.POLLOUT: "OUT",
+    select.POLLHUP: "HUP",
+    select.POLLERR: "ERR",
+}
+
+
+def _print_select_event(event):
+    mask = 1
+    while event:
+        if event & 1:
+            print("Event", _POLL_EVENTS.get(mask, mask))
+        event >>= 1
+        mask <<= 1
 
 
 @WebRoute(HttpMethod.GET, "/api/access-points")
