@@ -5,6 +5,12 @@ If you've created your venv before you open the project in PyCharm then it will 
 
 ---
 
+Installing MicroPython with `pyenv` is very convenient. However 1.12 is not installable until PR [#1587](https://github.com/pyenv/pyenv/pull/1587) is merged.
+
+And on macOS you _may_ have to set `PKG_CONFIG_PATH` and `LDFLAGS` as shown in `pyenv` issue [#1588](https://github.com/pyenv/pyenv/issues/1588).
+
+---
+
 To test the timeout logic that expires sockets try:
 
     $ telnet $ADDR 80
