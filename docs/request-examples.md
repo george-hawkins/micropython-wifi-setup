@@ -47,11 +47,3 @@ Oddy `-v` doesn't show the data sent with `--data`, if you want to see what exac
     $ curl --trace-ascii - -H "$JSON" --data 'bssid=alpha&password=beta' $ADDR/authenticate
 
 The output isn't very readable - but everything is there.
-
-Finally you can try a more unusual HTTP [method](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods):
-
-    $ curl -v -X OPTIONS $ADDR/unknown
-
-Perhaps a little oddly, the default handler for `OPTIONS` doesn't care if the given path exists or not.
-
-Unless you've reconfigured the `OptionsModule` there's no interesting additional headers in the `OPTIONS` response.

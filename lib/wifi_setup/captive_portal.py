@@ -2,7 +2,6 @@
 # import them first before anything else starts to consume memory.
 from micro_dns_srv import MicroDNSSrv
 from slim.fileserver_module import FileserverModule
-from slim.options_module import OptionsModule
 from slim.slim_config import SlimConfig
 from slim.slim_server import SlimServer
 from slim.web_route_module import WebRouteModule
@@ -59,8 +58,6 @@ def portal(essid, connect):
         "svg": "image/svg+xml"
     }, root))
     # fmt: on
-
-    slim_server.add_module("options", OptionsModule())
 
     addr = _ap.ifconfig()[0]
     addrBytes = MicroDNSSrv.ipV4StrToBytes(addr)

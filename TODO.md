@@ -11,8 +11,6 @@ See <https://stackoverflow.com/a/487718/245602>
 
 See which ones are really memory heavy. Maybe this and closing the server sockets will be enough.
 
-Remove OptionsModule.
-
 Try using `globals()`, `locals()` and anything similar to find out what holds onto memory after portal has exited.
 
 Document known issues:
