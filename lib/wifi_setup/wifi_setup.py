@@ -12,10 +12,6 @@ class WiFiSetup:
     # My ESP32 takes about 2 seconds to join, so 8s is a long timeout.
     _CONNECT_TIMEOUT = 8000
 
-    @staticmethod
-    def _default_message(sta):
-        return sta.ifconfig()[0]
-
     # The default `message` function returns the device's IP address but
     # one could provide a function that e.g. returned an MQTT topic ID.
     def __init__(self, essid, message=None):
@@ -37,6 +33,10 @@ class WiFiSetup:
 
         return self._sta
 
+    @staticmethod
+    def clear():
+        Credentials().clear()
+
     def _connect_previous(self):
         ssid, password = self._credentials.get()
 
@@ -48,6 +48,10 @@ class WiFiSetup:
 
         self._credentials.put(ssid, password)
         return self._message(self._sta)
+
+    @staticmethod
+    def _default_message(sta):
+        return sta.ifconfig()[0]
 
     def _connect(self, ssid, password):
         _logger.info("attempting to connect to %s", ssid)
