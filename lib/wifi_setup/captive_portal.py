@@ -27,6 +27,7 @@ _alive = True
 # Find a file, given a path relative to the directory contain this `.py` file.
 def _get_relative(filename):
     from shim import join, dirname
+
     return join(dirname(__file__), filename)
 
 

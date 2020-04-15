@@ -1,39 +1,39 @@
 # Python job scheduling for humans.
-# 
+#
 # An in-process scheduler for periodic jobs that uses the builder pattern
 # for configuration. Schedule lets you run Python functions (or any other
 # callable) periodically at pre-determined intervals using a simple,
 # human-friendly syntax.
-# 
+#
 # Inspired by Addam Wiggins' article "Rethinking Cron" [1] and the
 # "clockwork" Ruby module [2][3].
-# 
+#
 # Features:
 #     - A simple to use API for scheduling jobs.
 #     - Very lightweight and no external dependencies.
 #     - Excellent test coverage.
 #     - Works with Python 2.7 and 3.3
-# 
+#
 # Usage:
 #     >>> import schedule
 #     >>> import time
-# 
+#
 #     >>> def job(message='stuff'):
 #     >>>     print("I'm working on:", message)
-# 
+#
 #     >>> schedule.every(10).seconds.do(job)
-# 
+#
 #     >>> while True:
 #     >>>     schedule.run_pending()
 #     >>>     time.sleep(1)
-# 
+#
 # [1] http://adam.heroku.com/past/2010/4/13/rethinking_cron/
 # [2] https://github.com/tomykaira/clockwork
 # [3] http://adam.heroku.com/past/2010/6/30/replace_cron_with_clockwork/
 import logging
 import time
 
-logger = logging.getLogger('schedule')
+logger = logging.getLogger("schedule")
 
 
 def now():
@@ -44,13 +44,12 @@ CancelJob = object()
 
 
 class Scheduler(object):
-
     def __init__(self):
         self.jobs = []
 
     def run_pending(self):
         # Run all jobs that are scheduled to run.
-        # 
+        #
         # Please note that it is *intended behavior that tick() does not
         # run missed jobs*. For example, if you've registered a job that
         # should run every minute and you only call tick() in one hour
@@ -62,7 +61,7 @@ class Scheduler(object):
 
     def run_all(self):
         # Run all jobs regardless if they are scheduled to run or not.
-        logger.info('Running *all* %i jobs', len(self.jobs))
+        logger.info("Running *all* %i jobs", len(self.jobs))
         for job in self.jobs:
             self._run_job(job)
 
@@ -98,7 +97,7 @@ class Scheduler(object):
     @property
     def idle_seconds(self):
         # Number of seconds until `next_run`.
-        return (self.next_run - now())
+        return self.next_run - now()
 
 
 class Job(object):
@@ -133,7 +132,7 @@ class Job(object):
 
     def run(self):
         # Run the job and immediately reschedule it.
-        logger.info('Running job %s', self)
+        logger.info("Running job %s", self)
         ret = self.job_func()
         self.last_run = now()
         self._schedule_next_run()

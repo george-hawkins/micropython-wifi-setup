@@ -22,7 +22,7 @@ class SlimServer:
     _SLOT_SIZE = 1024
 
     # Python uses "" to refer to INADDR_ANY, i.e. all interfaces.
-    def __init__(self, poller, address="", port=80, config = SlimConfig()):
+    def __init__(self, poller, address="", port=80, config=SlimConfig()):
         self._config = config
         self._server_socket = self._create_server_socket(address, port)
 

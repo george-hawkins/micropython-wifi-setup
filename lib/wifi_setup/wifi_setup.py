@@ -31,6 +31,7 @@ class WiFiSetup:
     def setup(self):
         if not self._connect_previous():
             from wifi_setup.captive_portal import portal
+
             portal(self._essid, self._connect_new)
 
     def _connect_previous(self):

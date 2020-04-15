@@ -31,12 +31,14 @@ class Credentials:
                 db[self._PASSWORD] = password
             else:
                 self._pop(db, self._PASSWORD, None)
+
         self._db_action(action)
 
     def clear(self):
         def action(db):
             self._pop(db, self._SSID, None)
             self._pop(db, self._PASSWORD, None)
+
         self._db_action(action)
 
     def _db_action(self, action):

@@ -118,9 +118,7 @@ class MicroDNSSrv:
         self._server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._server.bind((address, port))
 
-        poller.register(
-            self._server, select.POLLIN | select.POLLERR | select.POLLHUP
-        )
+        poller.register(self._server, select.POLLIN | select.POLLERR | select.POLLHUP)
 
     # ============================================================================
     # ============================================================================

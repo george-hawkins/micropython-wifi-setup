@@ -14,6 +14,7 @@ _logger = logging.getLogger("response")
 # Read a file, given a path relative to the directory containing this `.py` file.
 def _read_relative(filename):
     from shim import join, dirname, read_text
+
     return read_text(join(dirname(__file__), filename))
 
 
