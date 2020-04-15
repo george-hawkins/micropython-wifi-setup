@@ -37,6 +37,10 @@ class SlimServer:
         self._recv_buf_slot = XBufferSlot(self._SLOT_SIZE)
         self._send_buf_slot = XBufferSlot(self._SLOT_SIZE)
 
+    def shutdown(self, poller):
+        poller.unregister(self._server_socket)
+        self._server_socket.close()
+
     def add_module(self, name, instance):
         self._modules[name] = instance
 

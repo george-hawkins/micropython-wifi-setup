@@ -62,14 +62,7 @@ def portal(essid, connect):
     }, root))
     # fmt: on
 
-    addr = _ap.ifconfig()[0]
-    addrBytes = MicroDNSSrv.ipV4StrToBytes(addr)
-
-    def resolve(name):
-        _logger.info("resolving %s", name)
-        return addrBytes
-
-    dns = MicroDNSSrv(resolve, poller)
+    dns = _create_dns(poller, addr=_ap.ifconfig()[0])
 
     # If no timeout is given `ipoll` blocks and the for-loop goes forever.
     # With a timeout the for-loop exits every time the timeout expires.
@@ -88,7 +81,20 @@ def portal(essid, connect):
         slim_server.pump_expire()  # Expire inactive client sockets.
         _schedule.run_pending()
 
+    slim_server.shutdown(poller)
+    dns.shutdown(poller)
+
     _ap.active(False)
+
+
+def _create_dns(poller, addr):
+    addrBytes = MicroDNSSrv.ipV4StrToBytes(addr)
+
+    def resolve(name):
+        _logger.info("resolving %s", name)
+        return addrBytes
+
+    return MicroDNSSrv(resolve, poller)
 
 
 _POLL_EVENTS = {

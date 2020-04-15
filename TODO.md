@@ -2,10 +2,6 @@ TODO:
 
 Put a README in `lib` so that even other projects simply copy it, there's a reference there to this project.
 
-Are you closing the DNS and slim-server server sockets?
-
-Deregister sockets from poller and close poller (if it has a close).
-
 Deregister web routes.
 
 Maybe have a global variable `singleton_portal` or simply get rid of decorators and make web_route more oo.

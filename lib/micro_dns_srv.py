@@ -120,6 +120,10 @@ class MicroDNSSrv:
 
         poller.register(self._server, select.POLLIN | select.POLLERR | select.POLLHUP)
 
+    def shutdown(self, poller):
+        poller.unregister(self._server)
+        self._server.close()
+
     # ============================================================================
     # ============================================================================
     # ============================================================================
