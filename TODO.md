@@ -13,11 +13,7 @@ See which ones are really memory heavy. Maybe this and closing the server socket
 
 Remove OptionsModule.
 
-Update `../wifi-setup-material/screenshot.png`
-
 Try using `globals()`, `locals()` and anything similar to find out what holds onto memory after portal has exited.
-
-Maybe rename wifi-setup-material to material-wifi-setup - and grep for all old usages of wifi-setup-material, e.g. in `update-www`.
 
 Document known issues:
 

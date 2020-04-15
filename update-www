@@ -1,18 +1,19 @@
 #!/bin/bash -e
 
-cd ../wifi-setup-material
+www=lib/wifi_setup/www
+material=../material-wifi-setup
+
+cd $material
 
 # Rebuild the distribution.
 rm -r dist
 ng build --prod
 
-cd -
-
-www=lib/wifi_setup/www
+cd - > /dev/null
 
 # Move over the rebuilt distribution.
 rm -r $www
-mv ../wifi-setup-material/dist/wifi-setup $www
+mv $material/dist/wifi-setup $www
 
 before=( $(du -hs $www) )
 
