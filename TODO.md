@@ -1,7 +1,5 @@
 TODO:
 
-`WiFiSetup.setup()` should return `self._sta`.
-
 Put a README in `lib` so that even other projects simply copy it, there's a reference there to this project.
 
 ---

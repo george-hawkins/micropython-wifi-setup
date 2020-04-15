@@ -32,7 +32,10 @@ class WiFiSetup:
         if not self._connect_previous():
             from wifi_setup.captive_portal import CaptivePortal
 
+            # `run` will only return once WiFi is setup.
             CaptivePortal().run(self._essid, self._connect_new)
+
+        return self._sta
 
     def _connect_previous(self):
         ssid, password = self._credentials.get()
