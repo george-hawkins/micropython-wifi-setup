@@ -72,6 +72,8 @@ To clear the credentials:
 Notes
 -----
 
+See [`docs/NOTES.md`](docs/NOTES.md) for more implementation details.
+
 The web server code is derived from [MicroWebSrv2](https://github.com/jczic/MicroWebSrv2) authored by Jean-Christophe Bos at HC<sup>2</sup> and licensed under the [MIT license](https://github.com/jczic/MicroWebSrv2/blob/master/LICENSE.md).
 
 The DNS server code is derived from [MicroDNSSrv](https://github.com/jczic/MicroDNSSrv/), also authored by Jean-Christophe Bos and licensed under the MIT license.

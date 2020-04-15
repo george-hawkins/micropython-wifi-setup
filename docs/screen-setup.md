@@ -14,12 +14,14 @@ Start a shell here with `ctrl-A` and `c`.
 Activate you venv and start `rshell`:
 
     $ source env/bin/activate
-    $ rshell -p /dev/cp2104 --buffer-size 512 --quiet
+    $ PORT=/dev/cp2104
+    $ rshell -p $PORT --buffer-size 512 --quiet
     > repl
 
 Tab back to the first area and use `curl`:
 
-    $ curl -v 192.168.0.178/index.html
+    $ ADDR=192.168.0.178
+    $ curl -v $ADDR/index.html
 
 To scroll backwards within an area use `ctrl-A` and `ESC` - you enter a quasi-vi mode and can move around with your mouse scroll wheel or the usual vi movement keys.
 
