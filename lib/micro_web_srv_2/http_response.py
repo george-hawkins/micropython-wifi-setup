@@ -112,7 +112,7 @@ class HttpResponse:
                 sys.print_exception(e)
                 self._xasCli.Close()
                 _logger.error(
-                    'Stream cannot be read for request "%s".' % self._request._path
+                    'stream cannot be read for request "%s".', self._request._path
                 )
                 return
         if self._sendingBuf:
@@ -171,16 +171,14 @@ class HttpResponse:
         host = self._request.Host
         host = " to {}".format(host) if host else ""
         _logger.info(
-            "From %s:%s%s %s %s >> [%s] %s"
-            % (
-                self._xasCli.CliAddr[0],
-                self._xasCli.CliAddr[1],
-                host,
-                self._request._method,
-                self._request._path,
-                code,
-                reason,
-            ),
+            "from %s:%s%s %s %s >> [%s] %s",
+            self._xasCli.CliAddr[0],
+            self._xasCli.CliAddr[1],
+            host,
+            self._request._method,
+            self._request._path,
+            code,
+            reason,
         )
         if self._allow_all_origins:
             self._acAllowOrigin = self._request.Origin
@@ -217,7 +215,7 @@ class HttpResponse:
             raise ValueError('"upgrade" must be a not empty string.')
         if self._hdrSent:
             _logger.warning(
-                'Response headers already sent for request "%s".' % self._request._path
+                'response headers already sent for request "%s".', self._request._path
             )
             return
         self.SetHeader("Connection", "Upgrade")
@@ -235,7 +233,7 @@ class HttpResponse:
             raise ValueError('"stream" must be a readable buffer protocol object.')
         if self._hdrSent:
             _logger.warning(
-                'Response headers already sent for request "%s".' % self._request._path
+                'response headers already sent for request "%s".', self._request._path
             )
             try:
                 stream.close()
@@ -280,7 +278,7 @@ class HttpResponse:
             raise ValueError('"code" must be a positive integer.')
         if self._hdrSent:
             _logger.warning(
-                'Response headers already sent for request "%s".' % self._request._path
+                'response headers already sent for request "%s".', self._request._path
             )
             return
         if not content:

@@ -1,7 +1,11 @@
 import network
 import time
+import logging
 
 from wifi_setup.credentials import Credentials
+
+
+_logger = logging.getLogger("wifi_setup")
 
 
 class WiFiSetup:
@@ -42,16 +46,16 @@ class WiFiSetup:
         return self._message(self._sta)
 
     def _connect(self, ssid, password):
-        print("attempting to connect to {}".format(ssid))
+        _logger.info("attempting to connect to %s", ssid)
 
         # Password may be none if the network is open.
         self._sta.connect(ssid, password)
 
         if not self._sync_wlan_connect(self._sta):
-            print("failed to connect")
+            _logger.error("failed to connect to %s", ssid)
             return False
 
-        print("Connected to {} with address {}".format(ssid, self._sta.ifconfig()[0]))
+        _logger.info("connected to %s with address %s", ssid, self._sta.ifconfig()[0])
         return True
 
     # I had hoped I could use wlan.status() to e.g. report if the password was wrong.

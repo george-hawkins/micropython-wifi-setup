@@ -1,5 +1,8 @@
 import errno
 import btree
+import logging
+
+_logger = logging.getLogger("credentials")
 
 
 # Credentials uses `btree` to store and retrieve data. In retrospect it would
@@ -65,5 +68,5 @@ class Credentials:
         except OSError as e:
             if e.args[0] != errno.ENOENT:
                 raise e
-            print("Creating", filename)
+            _logger.info("creating %s", filename)
             return open(filename, "w+b")

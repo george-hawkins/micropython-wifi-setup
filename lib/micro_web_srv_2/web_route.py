@@ -22,7 +22,7 @@ def WebRoute(method=None, routePath=None):
 
     def decorated(handler):
         RegisterRoute(handler, method, routePath)
-        _logger.info("[@WebRoute] %s %s" % (method, routePath))
+        _logger.info("[@WebRoute] %s %s", method, routePath)
         return handler
 
     return decorated

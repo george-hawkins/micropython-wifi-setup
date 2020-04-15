@@ -1,7 +1,6 @@
 import select
 from collections import OrderedDict
 from socket import socket
-
 import logging
 
 from micro_web_srv_2.http_request import HttpRequest
@@ -49,7 +48,7 @@ class SlimServer:
                     return
             except Exception as ex:
                 _logger.error(
-                    'Exception in request handler of module "%s" (%s).' % (modName, ex)
+                    'Exception in request handler of module "%s" (%s).', modName, ex
                 )
 
         request.Response.ReturnNotImplemented()

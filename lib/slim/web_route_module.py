@@ -36,7 +36,7 @@ class WebRouteModule:
                     return SlimServer.RESPONSE_PENDING
                 except:
                     _logger.error(
-                        "Not enough memory to read a content of %s bytes." % cnt_len
+                        "not enough memory to read a content of %s bytes.", cnt_len
                     )
                     request.Response.ReturnServiceUnavailable()
             else:
@@ -51,9 +51,9 @@ class WebRouteModule:
             else:
                 route_result.Handler(request)
             if not request.Response.HeadersSent:
-                _logger.warning("No response was sent from route %s." % route_result)
+                _logger.warning("no response was sent from route %s.", route_result)
                 request.Response.ReturnNotImplemented()
         except Exception as ex:
             sys.print_exception(ex)
-            _logger.error("Exception raised from route %s: %s" % (route_result, ex))
+            _logger.error("Exception raised from route %s: %s", route_result, ex)
             request.Response.ReturnInternalServerError()

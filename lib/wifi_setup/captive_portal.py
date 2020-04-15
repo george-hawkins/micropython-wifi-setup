@@ -9,10 +9,12 @@ from micro_web_srv_2.web_route import WebRoute, HttpMethod
 
 import network
 import select
-
-from binascii import hexlify
+import logging
 
 from schedule import Scheduler, CancelJob
+
+
+_logger = logging.getLogger("captive_portal")
 
 _ap = network.WLAN(network.AP_IF)
 
@@ -63,7 +65,7 @@ def portal(essid, connect):
     addrBytes = MicroDNSSrv.ipV4StrToBytes(addr)
 
     def resolve(name):
-        print("Resolving", name)
+        _logger.info("resolving %s", name)
         return addrBytes
 
     dns = MicroDNSSrv(resolve, poller)
@@ -100,7 +102,7 @@ def _print_select_event(event):
     mask = 1
     while event:
         if event & 1:
-            print("Event", _POLL_EVENTS.get(mask, mask))
+            _logger.info("event %s", _POLL_EVENTS.get(mask, mask))
         event >>= 1
         mask <<= 1
 
@@ -115,7 +117,7 @@ def request_access_points(request):
 @WebRoute(HttpMethod.POST, "/api/access-point")
 def request_access_point(request):
     data = request.GetPostedURLEncodedForm()
-    print("Data", data)
+    _logger.debug("connect request data %s", data)
     ssid = data.get("ssid", None)
     if not ssid:
         request.Response.ReturnBadRequest()
@@ -140,7 +142,7 @@ timeout_job = None
 
 
 def timed_out():
-    print("Keep-alive timeout expired.")
+    _logger.info("keep-alive timeout expired.")
     global _alive
     _alive = False
     global timeout_job
@@ -156,7 +158,7 @@ def request_alive(request):
         request.Response.ReturnBadRequest()
         return
 
-    print("Timeout", timeout)
+    _logger.debug("timeout %s", timeout)
     timeout = int(timeout) + _TOLERANCE
     global timeout_job
     if timeout_job:
@@ -164,6 +166,3 @@ def request_alive(request):
     timeout_job = _schedule.every(timeout).seconds.do(timed_out)
 
     request.Response.Return(_NO_CONTENT)
-
-
-print("Loaded", __file__)

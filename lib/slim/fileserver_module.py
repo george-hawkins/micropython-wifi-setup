@@ -29,7 +29,7 @@ class FileserverModule:
                     filename = compressed
                 request.Response.ReturnFile(filename)
             else:
-                _logger.warning("no MIME type for {}".format(filename))
+                _logger.warning("no MIME type for %s", filename)
                 request.Response.ReturnForbidden()
         else:
             request.Response.ReturnNotFound()
