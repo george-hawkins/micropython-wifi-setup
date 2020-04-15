@@ -168,11 +168,14 @@ class HttpResponse:
 
     def _makeBaseResponseHdr(self, code):
         reason = self._reason(code)
+        host = self._request.Host
+        host = " to {}".format(host) if host else ""
         _logger.info(
-            "From %s:%s %s %s >> [%s] %s"
+            "From %s:%s%s %s %s >> [%s] %s"
             % (
                 self._xasCli.CliAddr[0],
                 self._xasCli.CliAddr[1],
+                host,
                 self._request._method,
                 self._request._path,
                 code,

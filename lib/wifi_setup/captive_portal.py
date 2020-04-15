@@ -29,16 +29,8 @@ def _get_relative(filename):
     return join(dirname(__file__), filename)
 
 
-# A captive portal tries to push clients to a login page. This is typically done by
-# redirecting all DNS requests to the captive portal web server and then all HTTP
-# requests to the login page.
-# For an end user, trying to access a web page and then being redirected to a login page
-# is a bit confusing so most browsers and OSes these days try to detect this upfront and
-# immediately present the login page. For an example of how this is done, see:
-# https://www.chromium.org/chromium-os/chromiumos-design-docs/network-portal-detection
-
-# Rather than present a login page, this is a captive portal that lets you configure
-# access to your network.
+# Rather than present a login page, this is a captive portal that lets you setup
+# access to your network. See docs/NOTES.md for more about captive portals.
 def portal(essid, connect):
     global _connect
     _connect = connect
@@ -47,8 +39,10 @@ def portal(essid, connect):
 
     poller = select.poll()
 
-    # Rather than a 404 (Not Found) response, redirect all not found requests to "/".
-    config = SlimConfig(not_found_url="/")
+    # See the captive portal notes in docs/NOTES.md for why we redirect not-found URLs
+    # and why we redirect them to an absolute URL (rather than a path like "/").
+    # `essid` is used as the target host but any name could be used, e.g. "wifi-setup".
+    config = SlimConfig(not_found_url="http://{}/".format(essid))
 
     slim_server = SlimServer(poller, config=config)
 
