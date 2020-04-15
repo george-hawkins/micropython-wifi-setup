@@ -30,9 +30,9 @@ class WiFiSetup:
 
     def setup(self):
         if not self._connect_previous():
-            from wifi_setup.captive_portal import portal
+            from wifi_setup.captive_portal import CaptivePortal
 
-            portal(self._essid, self._connect_new)
+            CaptivePortal().run(self._essid, self._connect_new)
 
     def _connect_previous(self):
         ssid, password = self._credentials.get()

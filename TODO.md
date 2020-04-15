@@ -1,16 +1,18 @@
 TODO:
 
+`WiFiSetup.setup()` should return `self._sta`.
+
 Put a README in `lib` so that even other projects simply copy it, there's a reference there to this project.
 
-Deregister web routes.
-
-Maybe have a global variable `singleton_portal` or simply get rid of decorators and make web_route more oo.
+---
 
 Document known issues:
 
 * Insecure transmission and storage.
 * I regret not having unit tests - as always it was a false economy not adding them from the start.
 * Review code and .md files for other known issues.
+
+---
 
 Deleting all the modules gets you back most of your memory:
 
