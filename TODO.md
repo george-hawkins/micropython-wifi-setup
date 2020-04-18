@@ -1,5 +1,11 @@
 TODO:
 
+Maybe have a CheckpointModules class that can checkpoint `sys.modules` and retore a checkpoint (with a list of modules not to remove, e.g. the modules that are present when WiFiSetup does its job without needing the portal).
+
+See <https://docs.micropython.org/en/latest/reference/constrained.html> - in particular `micropython.mem_info(1)`.
+
+---
+
 Put a README in `lib` so that even other projects simply copy it, there's a reference there to this project.
 
 ---

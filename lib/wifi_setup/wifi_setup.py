@@ -24,23 +24,31 @@ class WiFiSetup:
         self._sta = network.WLAN(network.STA_IF)
         self._sta.active(True)
 
-    def setup(self):
-        if not self._connect_previous():
-            from wifi_setup.captive_portal import CaptivePortal
+    def has_ssid(self):
+        return self._credentials.get()[0] is not None
 
-            # `run` will only return once WiFi is setup.
-            CaptivePortal().run(self._essid, self._connect_new)
+    def connect(self):
+        ssid, password = self._credentials.get()
+
+        return self._sta if ssid and self._connect(ssid, password) else None
+
+    def setup(self):
+        from wifi_setup.captive_portal import CaptivePortal
+
+        # `run` will only return once WiFi is setup.
+        CaptivePortal().run(self._essid, self._connect_new)
+
+        return self._sta
+
+    def connect_or_setup(self):
+        if not self.connect():
+            self.setup()
 
         return self._sta
 
     @staticmethod
     def clear():
         Credentials().clear()
-
-    def _connect_previous(self):
-        ssid, password = self._credentials.get()
-
-        return self._connect(ssid, password) if ssid else False
 
     def _connect_new(self, ssid, password):
         if not self._connect(ssid, password):

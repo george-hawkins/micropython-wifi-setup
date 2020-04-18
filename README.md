@@ -65,9 +65,34 @@ You'll see the request and response headers and [`www/index.html`](www/index.htm
 
 There are more examples in [`request-examples.md`](request-examples.md).
 
+---
+
 To clear the credentials:
 
     >>> from wifi_setup.credentials import Credentials; Credentials().clear()
+
+---
+
+Simple approach:
+
+    ws = WiFiSetup()
+    sta = ws.connect_or_setup()
+
+More fine grained:
+
+    ws = WiFiSetup()
+    if ws.has_ssid():
+        sta = ws.connect()
+    if not sta:
+        sta = ws.setup()
+
+You could e.g. make calling `setup()` conditional on a button being held down during startup.
+
+You can also clear the existing credentials with the static method `clear()`:
+
+    WiFiSetup.clear()
+
+Note that the intention is that `WiFiSetup` is just used at startup - it's not as if it's working away continuously and your device will randomly enter setup mode whenever your WiFi becomes unavailable.
 
 Notes
 -----
