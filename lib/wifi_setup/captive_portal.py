@@ -69,7 +69,7 @@ class CaptivePortal:
         slim_server = SlimServer(poller, config=config)
 
         # fmt: off
-        slim_server.add_module("webroute", WebRouteModule([
+        slim_server.add_module(WebRouteModule([
             RegisteredRoute(HttpMethod.GET, "/api/access-points", self._request_access_points),
             RegisteredRoute(HttpMethod.POST, "/api/access-point", self._request_access_point),
             RegisteredRoute(HttpMethod.POST, "/api/alive", self._request_alive)
@@ -78,7 +78,7 @@ class CaptivePortal:
 
         root = self._get_relative("www")
         # fmt: off
-        slim_server.add_module("fileserver", FileserverModule({
+        slim_server.add_module(FileserverModule({
             "html": "text/html",
             "css": "text/css",
             "js": "application/javascript",

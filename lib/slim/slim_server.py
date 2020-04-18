@@ -1,6 +1,5 @@
 import select
-from collections import OrderedDict
-from socket import socket
+import socket
 import logging
 
 from micro_web_srv_2.http_request import HttpRequest
@@ -32,8 +31,7 @@ class SlimServer:
 
         self._socket_pool = SingleSocketPool(poller)
 
-        # Modules should be processed in the order that they're added so use OrderedDict.
-        self._modules = OrderedDict()
+        self._modules = []
         self._recv_buf_slot = XBufferSlot(self._SLOT_SIZE)
         self._send_buf_slot = XBufferSlot(self._SLOT_SIZE)
 
@@ -41,25 +39,27 @@ class SlimServer:
         poller.unregister(self._server_socket)
         self._server_socket.close()
 
-    def add_module(self, name, instance):
-        self._modules[name] = instance
+    def add_module(self, instance):
+        self._modules.append(instance)
 
     def _process_request_modules(self, request):
-        for modName, modInstance in self._modules.items():
+        for modInstance in self._modules:
             try:
                 r = modInstance.OnRequest(request)
                 if r is self.RESPONSE_PENDING or request.Response.HeadersSent:
                     return
             except Exception as ex:
+                name = type(modInstance).__name__
                 _logger.error(
-                    'Exception in request handler of module "%s" (%s).', modName, ex
+                    'Exception in request handler of module "%s" (%s).', name, ex
                 )
 
         request.Response.ReturnNotImplemented()
 
     def _create_server_socket(self, address, port):
-        server_socket = socket()
+        server_socket = socket.socket()
 
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_socket.bind((address, port))
         server_socket.listen(self._LISTEN_MAX)
 
