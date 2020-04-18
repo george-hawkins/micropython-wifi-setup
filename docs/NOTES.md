@@ -5,6 +5,22 @@ If you've created your venv before you open the project in PyCharm then it will 
 
 ---
 
+The usage video was recorded with [ScreenCam](https://play.google.com/store/apps/details?id=com.orpheusdroid.screenrecorder) with the default settings.
+
+It was edited with [iMovie](https://www.apple.com/imovie/) and exported at 540p / medium quality / best compression.
+
+It was then cropped to size using this SuperUser StackExchange [answer](https://superuser.com/a/810524) like so:
+
+    $ ffmpeg -ss 20 -i wifi-setup2.mp4 -vframes 10 -vf cropdetect -f null -
+        Stream #0:0(und): Video: h264 (High) ... 960x540 ...
+    [Parsed_cropdetect_0 @ 0x7fa729e00f00] x1:327 x2:632 ... crop=304:528:328:6
+    $ ffplay -vf crop=304:540:328:0 wifi-setup3.mp4
+    $ ffmpeg -i wifi-setup3.mp4 -vf crop=304:540:328:0 output.mp4
+
+For whatever reason the suggested cropping was a little over aggressive (6 pixels at top and bottom) so I manually adjusted the values.
+
+---
+
 Installing MicroPython with `pyenv` is very convenient. However 1.12 is not installable until PR [#1587](https://github.com/pyenv/pyenv/pull/1587) is merged.
 
 And on macOS you _may_ have to set `PKG_CONFIG_PATH` and `LDFLAGS` as shown in `pyenv` issue [#1588](https://github.com/pyenv/pyenv/issues/1588).
