@@ -19,7 +19,7 @@ The system works like this:
 
 Note: the setup process takes a callback that can perform additional steps on connecting to the network and can return something other than an IP address, e.g. an MQTT topic name.
 
-For a quick **video** of the setup process in action, click [here](https://george-hawkins.github.io/micropython-wifi-setup/).
+For a quick walkthru of these steps, with screenshots, click [here](docs/steps.md). For a quick video of the setup process in action, click [here](https://george-hawkins.github.io/micropython-wifi-setup/).
 
 ---
 
@@ -46,7 +46,7 @@ You could e.g. make calling `setup()` conditional on a button being held down du
 
 If you want to you can clear any existing credentials with the static method `WiFiSetup.clear()`.
 
-Note that the intention is that `WiFiSetup` is just used at startup - it's not as if it's working away continuously and your device will randomly enter setup mode whenever your WiFi becomes unavailable.
+Note that the intention is that `WiFiSetup` is just used at startup - it's **not** working away continuously and your device will **not** randomly enter setup mode whenever your WiFi becomes unavailable.
 
 ---
 
