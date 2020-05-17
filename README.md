@@ -67,23 +67,19 @@ On Linux:
 
     $ PORT=/dev/ttyUSB0
 
-Or if you've setup a `udev` rule to create a fixed name:
-
-    $ PORT=/dev/cp2104
-
 Then to interact with the MicroPython board:
 
-    $ rshell -p $PORT --buffer-size 512 --quiet
+    $ rshell --buffer-size 512 --quiet -p $PORT
 
 To clear the filesystem on the board:
 
-    $ rshell -p $PORT --buffer-size 512 --quiet repl '~ import os ~ os.VfsFat.mkfs(bdev) ~'
+    $ rshell --buffer-size 512 --quiet -p $PORT repl '~ import os ~ os.VfsFat.mkfs(bdev) ~'
 
 Note: this will also remove `boot.py` - if you've got any special boot setup, you should copy this file and restore it after the clean-up.
 
 To install this project:
 
-    $ rshell -p $PORT --buffer-size 512 --quiet
+    $ rshell --buffer-size 512 --quiet -p $PORT
     > cp -r main.py slim www /pyboard
 
 Go into the REPL and reset the board, it'll complain that "WiFi credentials have not been configured":

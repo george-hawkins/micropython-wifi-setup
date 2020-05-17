@@ -220,7 +220,7 @@ Upip fails on the ESP32 port
 Anyway at the moment `upip` on the ESP32 port fails for everything:
 
 ```
-$  rshell -p $PORT --buffer-size 512 --quiet
+$  rshell --buffer-size 512 --quiet -p $PORT
 > repl
 >>> import network
 >>> wlan = network.WLAN(network.STA_IF)

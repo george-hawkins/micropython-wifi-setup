@@ -14,8 +14,8 @@ Start a shell here with `ctrl-A` and `c`.
 Activate you venv and start `rshell`:
 
     $ source env/bin/activate
-    $ PORT=/dev/cp2104
-    $ rshell -p $PORT --buffer-size 512 --quiet
+    $ PORT=/dev/ttyUSB0
+    $ rshell --buffer-size 512 --quiet -p $PORT
     > repl
 
 Tab back to the first area and use `curl`:
