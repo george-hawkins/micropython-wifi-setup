@@ -2,9 +2,7 @@ import micropython
 import gc
 import select
 
-from slim.slim_server import SlimServer
-from slim.fileserver_module import FileserverModule
-
+# Display memory available at startup.
 gc.collect()
 micropython.mem_info()
 
@@ -16,8 +14,15 @@ sta = setup.connect_or_setup()
 del setup
 print("WiFi is setup")
 
+# Display memory available once the WiFi setup process is complete.
 gc.collect()
 micropython.mem_info()
+
+# Demo that the device is now accessable by starting a web server that serves
+# the contents of ./www - just an index.html file that displays a cute ghost.
+
+from slim.slim_server import SlimServer
+from slim.fileserver_module import FileserverModule
 
 poller = select.poll()
 
