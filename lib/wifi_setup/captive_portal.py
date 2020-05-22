@@ -18,7 +18,7 @@ _logger = logging.getLogger("captive_portal")
 
 
 # Rather than present a login page, this is a captive portal that lets you setup
-# access to your network. See docs/NOTES.md for more about captive portals.
+# access to your network. See docs/captive-portal.md for more about captive portals.
 class CaptivePortal:
     def run(self, essid, connect):
         self._schedule = Scheduler()
@@ -61,8 +61,8 @@ class CaptivePortal:
         self._ap.active(False)
 
     def _create_slim_server(self, poller, essid):
-        # See the captive portal notes in docs/NOTES.md for why we redirect not-found URLs
-        # and why we redirect them to an absolute URL (rather than a path like "/").
+        # See the captive portal notes in docs/captive-portal.md for why we redirect not-found
+        # URLs and why we redirect them to an absolute URL (rather than a path like "/").
         # `essid` is used as the target host but any name could be used, e.g. "wifi-setup".
         config = SlimConfig(not_found_url="http://{}/".format(essid))
 

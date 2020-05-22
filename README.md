@@ -166,7 +166,7 @@ This library uses what's termed a captive portal - this depends on being able to
 
 A more sophisticated setup would sniff all packets and spot DNS requests, even to external but unreachable services like 8.8.8.8, and spoof a response - however this requires [promiscuous mode](https://en.wikipedia.org/wiki/Promiscuous_mode) which isn't currently supported in MicroPython.
 
-For more about captive portals see the captive portal notes in [`docs/NOTES.md`](docs/NOTES.md).
+For more about captive portals see the captive portal notes in [`docs/captive-portal.md`](docs/captive-portal.md).
 
 Reusable parts
 --------------
