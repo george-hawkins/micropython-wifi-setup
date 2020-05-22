@@ -3,15 +3,15 @@ Managing MicroPython packages with Poetry
 
 This page documents the rather involved steps needed to manage this project and publish it to [PyPI](https://pypi.org/) using [Python Poetry](https://python-poetry.org/).
 
-In the end, I gave up on this idea for the simple reason that MicroPython's [`upip`](https://docs.micropython.org/en/latest/reference/packages.html#upip-package-manager) simply doesn't work at this time, on the ESP32 port, and hasn't worked for quite some time (see MicroPython issue [#5543](https://github.com/micropython/micropython/issues/5543), including one comment from me).
+In the end, I gave up on this idea for the simple reason that MicroPython's [`upip`](https://docs.micropython.org/en/latest/reference/packages.html#upip-package-manager) doesn't work at this time, on the ESP32 port, and hasn't worked for quite some time (see MicroPython issue [#5543](https://github.com/micropython/micropython/issues/5543), including one [comment](https://github.com/micropython/micropython/issues/5543#issuecomment-621306525) from me).
 
-When starting in on this, the difference between a [source distribution](https://docs.python.org/3.7/distutils/sourcedist.html), an egg and a wheel wasn't clear to me (see ["wheel vs egg"](https://packaging.python.org/discussions/wheel-vs-egg/)). And I'm not entirely sure that the distinction between a source distribution and an egg is clear in how MicroPython handle things. The MicroPython documentation says it uses the source distribution format for packaging. However it depends on egg related data included in such a distribution. It's true that [setuptools](https://setuptools.readthedocs.io/en/latest/) includes egg information in a source distribution. However Poetry does not and this appears to be valid. It would probably be clearer if `upip` explicitly worked with eggs rather than with source distributions that happen to contain egg related data.
+When starting in on this, the difference between a [source distribution](https://docs.python.org/3.7/distutils/sourcedist.html), an egg and a wheel wasn't clear to me (see ["wheel vs egg"](https://packaging.python.org/discussions/wheel-vs-egg/)). And I'm not entirely sure that the distinction between a source distribution and an egg is clear in how MicroPython handles things. The MicroPython documentation says it uses the source distribution format for packaging. However it depends on egg related data included in such a distribution. It's true that [setuptools](https://setuptools.readthedocs.io/en/latest/) includes egg information in a source distribution. However Poetry does not and this appears to be valid. It would probably be clearer if `upip` explicitly worked with eggs rather than with source distributions that happen to contain egg related data.
 
-It took me quite a while to realize that there's a fair degree of mismatch between what Poetry produces and what the MicroPython `upip` package manager.
+It took me quite a while to realize that there's a fair degree of mismatch between what Poetry produces and what the MicroPython `upip` package manager wants to consume.
 
-Poetry creates a source distribution that contains a `setup.py` but does not contain the egg related data that `upip` wants. Poetry has the egg related support it needs for dealing with existing packages, however it only build source distributions (without egg related data) and the newer wheel format.
+Poetry creates a source distribution that contains a `setup.py` but does not contain the egg related data that `upip` wants. Poetry has the egg related support it needs for dealing with existing packages, however it only builds source distributions (without egg related data) and the newer wheel format.
 
-`upip` depends on [`setuptool.setup`](https://setuptools.readthedocs.io/en/latest/setuptools.html), in your project's `setup.py`, being run with `cmdclass` set to bind `sdist` to the version provided by [`sdist_upip.py`](https://github.com/micropython/micropython-lib/blob/master/sdist_upip.py) (see the [documentation](https://docs.micropython.org/en/latest/reference/packages.html#creating-distribution-packages)). This results in a source distribution with a custom compression size and with `setup.py` excluded from the bundle (see [here](https://docs.micropython.org/en/latest/reference/packages.html#distribution-packages). Poetry auto-generates a `setup.py` when building a source distribution and bundles it in with the distribution. However the `setup.py` isn't executed at this point (it's only executed later by `pip` when _installing_ the distribution) so it can't affect e.g. the compression or anything else.
+`upip` depends on [`setuptool.setup`](https://setuptools.readthedocs.io/en/latest/setuptools.html), in your project's `setup.py`, being run with `cmdclass` set to bind `sdist` to the version provided by [`sdist_upip.py`](https://github.com/micropython/micropython-lib/blob/master/sdist_upip.py) (see the [documentation](https://docs.micropython.org/en/latest/reference/packages.html#creating-distribution-packages)). This results in a source distribution with a custom compression size and with `setup.py` excluded from the bundle (see [here](https://docs.micropython.org/en/latest/reference/packages.html#distribution-packages) for more details). Poetry auto-generates a `setup.py` when building a source distribution and bundles it in with the distribution. However the `setup.py` isn't executed at this point (it's only executed later by `pip` when _installing_ the distribution) so it can't affect e.g. the compression or anything else.
 
 Given all that, let's see how I got to a point where I could create and publish MicroPython compatible packages to PyPI. However, if I was doing this again I would create `setup.py` by hand and not introduce Poetry into the mix.
 
@@ -27,7 +27,7 @@ $ poetry init
 $ poetry check
 ```
 
-If you're using venv then Poetry will use this, however if one isn't currently active, Poetry will use its own venv management mechanism (creating venvs under `~/.cache/pypoetry/virtualenvs` on Linux).
+If you're using a venv then Poetry will use this, however if one isn't currently active, Poetry will use its own venv management mechanism (creating venvs under `~/.cache/pypoetry/virtualenvs` on Linux).
 
 I prefer to use the standard mechanism:
 
@@ -37,7 +37,7 @@ $ source env/bin/activate
 $ pip install --upgrade pip
 ```
 
-Then to create a Poetry `pyproject.toml` run and complete the questions asked by:
+Then to create a Poetry `pyproject.toml` run and complete the questions asked by `poetry init`, like so:
 
 ```
 $ poetry init
@@ -127,7 +127,7 @@ FileNotFoundError: [Errno 2] No such file or directory: '/tmp/pip-install-kfqm4a
 ...
 ```
 
-As noted [here](http://docs.micropython.org/en/latest/reference/packages.html) MicroPython packages don't include the expected `setup.py`.
+As noted [here](http://docs.micropython.org/en/latest/reference/packages.html), MicroPython packages don't include the expected `setup.py`.
 
 You can only install such packages using `upip`:
 
@@ -138,19 +138,12 @@ Installing to: lib/
 Installing micropython-logging 0.3 from https://micropython.org/pi/logging/logging-0.3.tar.gz
 ```
 
-Pyenv and MicroPython
----------------------
-
-Above, I use `micropython` on Linux. If you've already installed MicroPython with `pyenv`, can enable CPython and MicroPython versions at the same time:
-
-```
-$ pyenv global 3.6.9 micropython-1.12
-```
+Above, I use `micropython` on Linux - see the notes [here](NOTES.md#micropython-unix-port) on using `pyenv` to install MicroPython.
 
 Addressing the issues
 ---------------------
 
-`upip` expects just to see a single format available on PyPI and chokes if it sees more than one - so if immediately fails on seeing both the sdist and wheel packages published by Poetry.
+`upip` expects just to see a single format available on PyPI and chokes if it sees more than one - so it immediately fails on seeing both the sdist and wheel packages published by Poetry.
 
 You can force Poetry only to build the sdist package like this:
 
@@ -162,7 +155,7 @@ I thought I would be able to disable building the wheel package via the `pyproje
 
 ```
 packages = [
-    { include = "foo_bar_cb3da32", format = "sdist" },
+    { include = "foo_bar", format = "sdist" },
 ]
 ```
 
@@ -205,10 +198,10 @@ The `requires.txt` file will contain any version contraints specified in the `.t
 Once you have a generataed or hand-crafted `requires.txt`, Poetry will include it in the sdist package that it creates and this is enough to convince the UNIX port of `upip` to accept your package (published to PyPI _without_ the corresponding wheel) and install it along with its dependencies:
 
 ```
-$ micropython -m upip install -p lib foo-bar-cb3da32
+$ micropython -m upip install -p lib foo-bar
 Installing to: lib/
 Warning: micropython.org SSL certificate is not validated
-Installing foo-bar-cb3da32 0.1.5 from https://files.pythonhosted.org/packages/a9/17/7373487a933881dcaa93e7fb3b11bdd7966799620f84c211c42ec0ad9760/foo-bar-cb3da32-0.1.5.tar.gz
+Installing foo-bar 0.1.0 from https://files.pythonhosted.org/packages/a9/17/7373487a933881dcaa93e7fb3b11bdd7966799620f84c211c42ec0ad9760/foo-bar-0.1.0.tar.gz
 Installing micropython-logging 0.3 from https://micropython.org/pi/logging/logging-0.3.tar.gz
 ```
 
@@ -275,7 +268,7 @@ $ poetry init
 Package name [foo-bar]:
 Version [0.1.0]:
 Description []:
-Author [George Hawkins <george-hawkins@users.noreply.github.com>, n to skip]:  George Hawkins
+Author [George Hawkins <foo@bar.com>, n to skip]:  George Hawkins
 License []:  MIT
 Compatible Python versions [^3.6]:
 Would you like to define your main dependencies interactively? (yes/no) [yes]
@@ -321,7 +314,7 @@ Now get setuptools, rather than Poetry to regenerate the source distribution:
 $ python setup.py sdist
 ```
 
-You can no get Poetry to publish this to PyPI:
+You can now get Poetry to publish this to PyPI:
 
 ```
 $ poetry publish 
@@ -336,6 +329,37 @@ $ micropython -m upip install -p lib foo-bar
 As could any other _working_ port of `upip`.
 
 In the end, it's all a bit pointless and as you can see from the above example it would be easier to create `setup.py` directly, work with it and leave Poetry out of the equation.
+
+micropython-logging version
+---------------------------
+
+If you look up you'll see that `upip` (using the MicroPython UNIX port) installs version 0.3 of MicroPython:
+
+```
+$ micropython -m upip install -p lib micropython-logging
+...
+Installing micropython-logging 0.3 from https://micropython.org/pi/logging/logging-0.3.tar.gz
+```
+
+Whereas Poetry picks up version 0.52:
+
+```
+$ poetry init
+...
+Search for package to add (or leave blank to continue): micropython-logging
+...
+Enter the version constraint to require (or leave blank to use the latest version): 
+Using version ^0.5.2 for micropython-logging
+```
+
+This confused me for a while. The difference is that `upip` tries micropython.org before it tries pypi.org (see [here](https://github.com/micropython/micropython/blob/69661f3/tools/upip.py#L20)) and:
+
+* micropython.org has version 0.3 of [micropython/micropython-lib/tree/master/logging](https://github.com/micropython/micropython-lib/tree/master/logging).
+* pypi.org has version 0.52 of [pfalcon/pycopy-lib/tree/master/logging](https://github.com/pfalcon/pycopy-lib/tree/master/logging).
+
+I.e. it's not just different versions, it's also different GitHub projects that are involved.
+
+Poetry only looks at PyPI so it picks up the version published there.
 
 Notes
 -----
