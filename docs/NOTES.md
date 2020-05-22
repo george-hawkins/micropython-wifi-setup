@@ -1,7 +1,9 @@
 Notes
 =====
 
-This page contains miscellaneous notes that accumulated in the process of creating this project.
+This page contains miscellaneous notes that were accumulated in the process of creating this project.
+
+There are also some additional notes, separated out into [`screen-setup.md`](screen-setup.md) (basic usage notes for `screen`) and [`request-examples.md`](request-examples.md) (notes on using `curl` during development).
 
 Connection failure reason
 -------------------------
@@ -19,7 +21,7 @@ This would mean only that particular device, with the key pre-installed, could d
 
 However an AES key is at minimum 128 bits, i.e. 32 hex digits, which is more than most people would want to type in - and you'd probably want to include two checksum digits so that it's possible to point out if the key looks good or not.
 
-One possibility would be to use a [password-based key derivation function](https://en.wikipedia.org/wiki/Key_derivation_function) (PBKDF) to generate a key from a more reasonable length password (see step 5. and the text below in this Crypto StackExchange [answer](https://crypto.stackexchange.com/a/53554/8854)). Currently [Argon2](https://en.wikipedia.org/wiki/Argon2) seems to be the first-choice PBKDF, however according to this [answer](https://forum.micropython.org/viewtopic.php?p=36116#p36116) on the MicroPython forums all such algorithms consume noticeable amounts of ROM "unlikely to ever appear by default in micropython firmware".
+One possibility would be to use a [password-based key derivation function](https://en.wikipedia.org/wiki/Key_derivation_function) (PBKDF) to generate a key from a more reasonable length password (see step 5. and the text below it in this Crypto StackExchange [answer](https://crypto.stackexchange.com/a/53554/8854)). Currently [Argon2](https://en.wikipedia.org/wiki/Argon2) seems to be the first-choice PBKDF, however according to this [answer](https://forum.micropython.org/viewtopic.php?p=36116#p36116) on the MicroPython forums all such algorithms consume noticeable amounts of ROM, making them "unlikely to ever appear by default in micropython firmware".
 
 Testing connection timeout logic
 --------------------------------
@@ -34,21 +36,10 @@ Just leave it there or paste in e.g. just the first line of a request:
 
 Within a few seconds (the time configured via `SlimConfig.timeout_sec`) the server will drop the connection.
 
-Curl and POST body content
---------------------------
-
-If you're posting data using `curl` you won't see the data even with `-v` as it doesn't show the body content that's sent:
-
-    $ curl -v --data 'bssid=alpha&password=beta' 192.168.0.178/authenticate
-
-If you want to see the headers _and_ body content, you have to replace `-v` with `--trace-ascii -` like so:
-
-    $ curl --trace-ascii - --data 'bssid=alpha&password=beta' 192.168.0.178/authenticate
-
 MicroPython UNIX port
 ---------------------
 
-Installing the UNIX port of MicroPython on your local system is very convenient using `pyenv`. Normally, you only mark one version of Python as active using `pyenv` - it is possible though to make both your normal CPython version and MicroPython available at the same time.
+Installing the UNIX port of MicroPython on your local system is very convenient using `pyenv`. Normally, you only mark one version of Python as active using `pyenv`. It is possible though to make both your normal CPython version and MicroPython available at the same time.
 
 First determine the currently active version of Python:
 
@@ -83,7 +74,7 @@ Using the MicroPython REPL, you can dump the visible access points like so:
 
     >>> json.dumps([(t[0], binascii.hexlify(t[1]), t[2], t[3], t[4], t[5]) for t in sta.scan()])
 
-However the REPL escapes single quotes, i.e. "Foo's AP" is displayed as "Foo\'s AP", which is invalid JSON. This is just a REPL artifact. To get the un-munged JSON:
+However the REPL escapes single quotes, i.e. "Foo's AP" is displayed as "Foo\\'s AP", which is invalid JSON. This is just a REPL artifact. To get the un-munged JSON:
 
     >>> import network
     >>> import json
@@ -100,7 +91,7 @@ The results (prettified) are something like this:
 ```json
 [
   [
-    "Salt_2GHz_8A9F85",
+    "Foo's AP",
     "44fe3b8a9f87",
     11,
     -82,
@@ -121,7 +112,7 @@ The results (prettified) are something like this:
 Try mpy-cross
 -------------
 
-Look at what affect using [mpy-cross](https://github.com/micropython/micropython/tree/master/mpy-cross) has on available memory.
+Look at what affect using [mpy-cross](https://github.com/george-hawkins/micropython-notes/blob/master/precompiling.md) has on available memory.
 
 You can check available memory like so:
 
@@ -133,17 +124,17 @@ You can check available memory like so:
     >>> micropython.mem_info()
     ...
 
-Maybe it makes no difference _once things are compiled_ but simply ensures that the compiler won't run out of memory doing its job?
+Maybe it makes no difference _once things are compiled_ and simply ensures that the compiler won't run out of memory doing its job.
 
 PyCharm Python version
 ----------------------
 
-If you've created your venv before you open the project in PyCharm then it will automatically pickup the Python version from the venv. Otherwise, go to _Settings / Project:my-project-name / Project Interpreter_ - click cog and select _Add_, it should automatically select _Existing environment_ and the interpreter in the venv - you just have to press OK.
+If you've created your venv before you open the project in PyCharm then it will automatically pickup the Python version from the venv. Otherwise, go to _Settings / Project:my-project-name / Project Interpreter_ - click the cog and select _Add_, it should automatically select _Existing environment_ and the interpreter in the venv - you just have to press OK.
 
 Black and Flake8
 ----------------
 
-The code is formatted with [Black](https://black.readthedocs.io/en/stable/) and checked with [Flake8](https://flake8.pycqa.org/en/latest/).
+The code here is formatted with [Black](https://black.readthedocs.io/en/stable/) and checked with [Flake8](https://flake8.pycqa.org/en/latest/).
 
     $ pip install black
     $ pip install flake8

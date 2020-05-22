@@ -12,6 +12,8 @@ sta = setup.connect_or_setup()
 print("WiFi is setup")
 ```
 
+Once the device is restarted, you're ready to connect it to the same WiFi network that you use with your phone and other devices.
+
 **2.** Currently, your phone is on your home network _Foobar Net_.
 
 <!-- This image is a JPEG as otherwise the background makes it huge. -->
@@ -24,6 +26,8 @@ print("WiFi is setup")
 **4.** You look at your MicroPython device, which you labelled with the name you gave it in the Python code above.
 
 ![device](images/labeled-device.jpg)
+
+<sub>The eagle eyed will notice the mismatch between "ding-5cd80b1" here and "ding-5cd80b5" seen elsewhere - I haven't updated this photo to match.</sub>
 
 **5.** You plug in your device and see it appear as an open network in your WiFi settings.
 
@@ -70,7 +74,7 @@ print("WiFi is setup")
 <!-- This image is a JPEG as otherwise the background makes it huge. -->
 <img height="512" src="images/steps/13-launcher.jpg">
 
-**16.** You paste the IP address that you copied earlier into the web address field.
+**16.** You paste the IP address, that you copied earlier, into the web address field.
 
 <img height="512" src="images/steps/14-chrome.png">
 
