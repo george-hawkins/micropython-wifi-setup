@@ -189,6 +189,15 @@ while True:
 
 Create a `www` directory and add an `index.html` there. For every different file suffix used, you have to add a suffix-to-[MIME type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types) mapping. In the snippet above the only mapping provided is from the suffix `html` to MIME type `text/html`.
 
+Regrets
+-------
+
+Back in 2013, I achieved my 15 seconds of internet fame by showing that a third party could easily spy on the Smart Config process used by the TI CC3000 (and, I believe, subsequent chips in that range) and recover the user's WiFi password (see [here](https://electronics.stackexchange.com/a/84965/27099) for more details). So I'm a little ashamed to have produced a library where it's even easier to spy on the process involved. A third party simply has to connect to the open temporary access point created by this library and, using [promiscuous mode](https://en.wikipedia.org/wiki/Promiscuous_mode), watch the unencrypted packets exchanged between the user's phone and the device.
+
+Once configured, the credentials are then stored in an easy to recover format on the board (see the [BTree](http://docs.micropython.org/en/latest/library/btree.html) file there called `credentials`). To do better than this would require more interaction between MicroPython and the underlying system, e.g. some systems provide the ability to store credentials such that only the device's WiFi process can recover the necessary information (without it being easily available to anyone who can physically access the board).
+
+I also regret not having created unit tests as I went along. At the start, I thought this project would be rather more trivial than it turned out. By the end, the absence was very much missed when making changes to the code. In the sister project [material-wifi-setup](https://github.com/george-hawkins/material-wifi-setup), I even actively removed the test related elements included by `ng new` when I created the project.
+
 Notes
 -----
 
