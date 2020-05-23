@@ -75,7 +75,7 @@ Then create a Python venv and install [`rshell`](https://github.com/dhylands/rsh
     $ pip install --upgrade pip
     $ pip install rshell
 
-Only the `source` step needs to be repeated (whenever you open a new terminal session). For more about `rshell`, see my notes [here](https://github.com/george-hawkins/micropython-notes/blob/master/tools-filesystem-and-repl.md#rshell).
+Once set up, the `source` step is the only one you need to repeat - you need to use it whenever you open a new terminal session in order to activate the environment. If virtual environments are new to you, see my notes [here](https://github.com/george-hawkins/snippets/blob/master/python-venv.md). For more about `rshell`, see my notes [here](https://github.com/george-hawkins/micropython-notes/blob/master/tools-filesystem-and-repl.md#rshell).
 
 All the snippets below assume you've set the variable `PORT` to point to the serial device corresponding to your board.
 
@@ -173,9 +173,19 @@ Reusable parts
 
 There's a substantial amount of code behind the WiFi setup process. Some of the pieces may be useful in your own project.
 
+The most interesting elements are cut-down versions of [MicroWebSrv2](https://github.com/jczic/MicroWebSrv2), [MicroDNSSrv](https://github.com/jczic/MicroDNSSrv/), [schedule](https://github.com/rguillon/schedule) and [logging](https://github.com/micropython/micropython-lib/blob/master/logging). The web server, i.e. MicroWebSrv2, is the most dramatically reworked of these, though the core request and response classes (and the underlying networking related classes) remain much as they were.
+
+Most of the changes were undertaken to reduce memory usage and to get everything to work well with an event loop based around `select.poll()` and `select.poll.ipoll(...)` (where services are fed with events - what I call pumping). All threading has been removed from the web server and it can only handle one request at a time. Given the use of polling it would be possible to support multiple concurrent requests - the reason for not doing this, is to avoid the additional memory required to support send and receive buffers for more than one request at a time.
+
+### The web server
+
 How to reuse the web server:
 
 ```python
+import select
+from slim.slim_server import SlimServer
+from slim.fileserver_module import FileserverModule
+
 poller = select.poll()
 
 slim_server = SlimServer(poller)
@@ -188,6 +198,110 @@ while True:
 ```
 
 Create a `www` directory and add an `index.html` there. For every different file suffix used, you have to add a suffix-to-[MIME type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types) mapping. In the snippet above the only mapping provided is from the suffix `html` to MIME type `text/html`.
+
+One feature that I added to the web server is the ability to store your files in compressed form, e.g. `index.html.gz` rather than `index.html`, this allowed me to reduce the storage needed for the web resources needed for this project by about a third. See the compression section [here](docs/request-examples.md#compression) for more details.
+
+### The REST module
+
+The web server functionality is organized into modules - above I used the [`FileserverModule`](lib/slim/fileserver_module.py) for serving static files. There's also a [`WebRouteModule`](https://github.com/george-hawkins/micropython-wifi-setup/blob/master/lib/slim/web_route_module.py) that can be used to provide REST-like behavior:
+
+```python
+from slim.web_route_module import WebRouteModule, RegisteredRoute, HttpMethod
+
+def _hello(request):
+    request.Response.ReturnOkJSON({ "message": "hello" })
+ 
+def _log(request):
+    data = request.GetPostedURLEncodedForm()
+    message = password = data.get("message", None)
+    print(message)
+    request.Response.ReturnOk()
+
+slim_server.add_module(WebRouteModule([
+    RegisteredRoute(HttpMethod.GET, "/api/hello", _hello),
+    RegisteredRoute(HttpMethod.POST, "/api/log", _log)
+]))
+```
+
+Then you can test this logic like so (replace `$ADDR` with address of your device):
+
+```
+$ curl http://$ADDR/api/hello
+{"message": "hello"}
+$ curl --data 'message=foobar' http://$ADDR/api/log
+```
+
+For more on using `curl` like this with the server, and on how things like how setting the header `Accept: application/json` affects things, see these [notes](docs/request-examples.md).
+
+**Important:** for each request the modules are called in the order that they're registered using `add_module(...)`, if you use `WebRouteModule` you _must_ register it before `FileserverModule` as currently the `FileserverModule` will respond to any `GET` request that it cannot resolve with `404 Not Found` without giving another module a chance to handle the request.
+
+Note: the original MicroWebSrv2 logic also supported [route arguments](https://github.com/jczic/MicroWebSrv2/blob/master/docs/index.md#route-args), i.e. you could specify values as part of the path, e.g. it could automatically parse out the `5cd80b1` value from a path like `/fetch/id/5cd80b1`. This behavior isn't supported in this cut-down version, parameters are only parsed out of the [query string](https://en.wikipedia.org/wiki/Query_string), e.g. `/fetch?id=5cd80b1`, or out of form data (as shown in the snippet above).
+
+### DNS
+
+Being able to respond to DNS requests is central to implementing the captive portal used by this library. However once your device is connected to an existing network, it's less obvious what use one could make of a mini-DNS server on a MicroPython board. It is just documented here for completeness.
+
+```python
+from micro_dns_srv import MicroDNSSrv
+
+addr = sta.ifconfig()[0]
+addrBytes = MicroDNSSrv.ipV4StrToBytes(addr)
+
+def resolve(name):
+    print("Resolving", name)
+    return addrBytes
+
+dns = MicroDNSSrv(resolve, poller)
+
+while True:
+    for (s, event) in poller.ipoll(0):
+        dns.pump(s, event)
+```
+
+Here `sta` is a `network.WLAN` instance corresponding to your current network connection, we use it to get the devices address and convert it into the byte format used by DNS. We provide a `resolve` function that, given a `name`, returns an address - the simple example function just prints the name and resolves every name to the board's address.
+
+### Scheduler
+
+If you're used to [Node.js](https://nodejs.org/en/about/), you're probably also used to using timers to schedule functions to be called at some point in the future. The [`Scheduler`](https://github.com/george-hawkins/micropython-wifi-setup/blob/master/lib/schedule.py) provides similar functionality:
+
+```python
+from schedule import Scheduler, CancelJob
+
+def do_something():
+    print("foobar")
+    return CancelJob
+
+schedule = Scheduler()
+job = schedule.every(5).seconds.do(do_something)
+
+while True:
+    schedule.run_pending()
+```
+
+Here we've registered a job to execute in 5 seconds time. If the function `do_something` didn't return anything then it would be run every 5 seconds forever more, returning `CancelJob` cancels the job. The job can also be canceled by calling `schedule.cancel_job(...)` on the `job` object we created.
+
+`schedule.run_pending()` needs to be called regularly - this works well in combination with the event pumping loop seen in the previous examples. However, if used on its own it would probably make sense to combine it with `time.sleep(1)` in the loop shown in the example here.
+
+Note: this cut-down version of `Scheduler` only supports `seconds`.
+
+### Logger
+
+The [`Logger`](lib/logging.py) just provides behavior that mimics that of the standard CPython [logging](https://docs.python.org/3/howto/logging.html) and behaves much as you'd expect:
+
+```python
+import logging
+
+_logger = logging.getLogger(__name__)
+
+name = "alpha"
+count = 42
+
+_logger.warning("%s is now %d", name, count)
+```
+
+This will log something like `WARNING:my_module:alpha is now 42` to standard error. As you can see, the logger uses the classic [printf-style formatting](https://docs.python.org/3/library/stdtypes.html#old-string-formatting) that you typically see used with the `%` operator, e.g. `"%s is %d" % ("alpha", 42)`. However here you don't need the `%` operator and the arguments don't need to wrapped up as a tuple.
+
+Note: this cut-down version of `Logger` requires that you create `Logger` instances, as shown above, it doesn't support the usage `logging.warning(...)` where a default root logger is used.
 
 Regrets
 -------
@@ -214,4 +328,4 @@ The DNS server code is derived from [MicroDNSSrv](https://github.com/jczic/Micro
 
 The schedule code is derived from [schedule](https://github.com/rguillon/schedule), authored by Renaud Guillon and licensed under the [MIT license](https://github.com/rguillon/schedule/blob/master/LICENSE.txt).
 
-The logging package is [micropython-lib/logging](https://github.com/micropython/micropython-lib/blob/master/logging), authored by Paul Sokolovsky (aka Pfalcon) and licensed under the [MIT license](https://github.com/micropython/micropython-lib/blob/master/logging/setup.py) (see `license` key).
+The logging package is derived from [micropython-lib/logging](https://github.com/micropython/micropython-lib/blob/master/logging), authored by Paul Sokolovsky (aka Pfalcon) and licensed under the [MIT license](https://github.com/micropython/micropython-lib/blob/master/logging/setup.py) (see `license` key).
