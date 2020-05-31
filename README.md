@@ -189,7 +189,7 @@ from slim.fileserver_module import FileserverModule
 poller = select.poll()
 
 slim_server = SlimServer(poller)
-slim_server.add_module(FileserverModule({ "html": "text/html" }))
+slim_server.add_module(FileserverModule({"html": "text/html"}))
 
 while True:
     for (s, event) in poller.ipoll(0):
@@ -209,7 +209,7 @@ The web server functionality is organized into modules - above I used the [`File
 from slim.web_route_module import WebRouteModule, RegisteredRoute, HttpMethod
 
 def _hello(request):
-    request.Response.ReturnOkJSON({ "message": "hello" })
+    request.Response.ReturnOkJSON({"message": "hello"})
  
 def _log(request):
     data = request.GetPostedURLEncodedForm()

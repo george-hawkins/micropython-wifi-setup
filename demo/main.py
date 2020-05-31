@@ -27,7 +27,7 @@ from slim.fileserver_module import FileserverModule
 poller = select.poll()
 
 slim_server = SlimServer(poller)
-slim_server.add_module(FileserverModule({ "html": "text/html" }))
+slim_server.add_module(FileserverModule({"html": "text/html"}))
 
 while True:
     for (s, event) in poller.ipoll(0):
