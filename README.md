@@ -201,6 +201,8 @@ Create a `www` directory and add an `index.html` there. For every different file
 
 One feature that I added to the web server is the ability to store your files in compressed form, e.g. `index.html.gz` rather than `index.html`, this allowed me to reduce the storage needed for the web resources needed for this project by about a third. See the compression section [here](docs/request-examples.md#compression) for more details.
 
+Note: if you're looking at the web server code and notice camelCase used in some place and more [PEP 8](https://www.python.org/dev/peps/pep-0008/) compliant snake_case in others, this is deliberate - the original code used camelCase and I used snake_case to make clearer what functions and variables I'd introduced.
+
 ### The REST module
 
 The web server functionality is organized into modules - above I used the [`FileserverModule`](lib/slim/fileserver_module.py) for serving static files. There's also a [`WebRouteModule`](https://github.com/george-hawkins/micropython-wifi-setup/blob/master/lib/slim/web_route_module.py) that can be used to provide REST-like behavior:

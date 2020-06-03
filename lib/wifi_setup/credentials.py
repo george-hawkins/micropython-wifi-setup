@@ -52,10 +52,10 @@ class Credentials:
 
     # `btree` doesn't support the standard dictionary `pop`.
     @staticmethod
-    def _pop(dict, key, default):
-        if key in dict:
-            r = dict[key]
-            del dict[key]
+    def _pop(d, key, default):
+        if key in d:
+            r = d[key]
+            del d[key]
             return r
         else:
             return default

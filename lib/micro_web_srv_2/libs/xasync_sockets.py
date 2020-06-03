@@ -74,13 +74,17 @@ class XAsyncSocket:
 
     # ------------------------------------------------------------------------
 
+    # A subclass can choose to do something on socket expiration.
+    def _expired(self):
+        pass
+
+    # ------------------------------------------------------------------------
+
     def pump_expire(self):
         if self._expire_time_millis:
             diff = ticks_diff(ticks_ms(), self._expire_time_millis)
             if diff > 0:
-                _logger.warning(
-                    "connection from %s:%s expired", self._cliAddr[0], self._cliAddr[1]
-                )
+                self._expired()
                 self._close(XClosedReason.Timeout)
 
     # ------------------------------------------------------------------------
@@ -176,6 +180,13 @@ class XAsyncTCPClient(XAsyncSocket):
             raise XAsyncTCPClientException(
                 "Error to creating XAsyncTCPClient, arguments are incorrects."
             )
+
+    # ------------------------------------------------------------------------
+
+    def _expired(self):
+        _logger.warning(
+            "connection from %s:%s expired", self._cliAddr[0], self._cliAddr[1]
+        )
 
     # ------------------------------------------------------------------------
 

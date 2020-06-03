@@ -18,7 +18,7 @@ print("WiFi is setup")
 gc.collect()
 micropython.mem_info()
 
-# Demo that the device is now accessable by starting a web server that serves
+# Demo that the device is now accessible by starting a web server that serves
 # the contents of ./www - just an index.html file that displays a cute ghost.
 
 from slim.slim_server import SlimServer

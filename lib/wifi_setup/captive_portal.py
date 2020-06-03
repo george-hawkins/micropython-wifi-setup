@@ -1,10 +1,10 @@
 # The compiler needs a lot of space to process the server classes etc. so
 # import them first before anything else starts to consume memory.
-from micro_dns_srv import MicroDNSSrv
-from slim.fileserver_module import FileserverModule
-from slim.slim_config import SlimConfig
 from slim.slim_server import SlimServer
+from slim.slim_config import SlimConfig
+from slim.fileserver_module import FileserverModule
 from slim.web_route_module import WebRouteModule, RegisteredRoute, HttpMethod
+from micro_dns_srv import MicroDNSSrv
 from shim import join, dirname
 
 import network
@@ -17,7 +17,7 @@ from schedule import Scheduler, CancelJob
 _logger = logging.getLogger("captive_portal")
 
 
-# Rather than present a login page, this is a captive portal that lets you setup
+# Rather than present a login page, this is a captive portal that lets you set up
 # access to your network. See docs/captive-portal.md for more about captive portals.
 class CaptivePortal:
     def run(self, essid, connect):
@@ -28,7 +28,7 @@ class CaptivePortal:
 
         self._ap = network.WLAN(network.AP_IF)
         self._ap.active(True)
-        self._ap.config(essid=essid)  # You can't set values before calling active.
+        self._ap.config(essid=essid)  # You can't set values before calling active(...).
 
         poller = select.poll()
 
@@ -44,7 +44,7 @@ class CaptivePortal:
         while self._alive:
             # Under the covers polling is done with a non-blocking ioctl call and the timeout
             # (or blocking forever) is implemented with a hard loop, so there's nothing to be
-            # gained, e.g. reduced power consumption, by using a timeout greater than 0.
+            # gained (e.g. reduced power consumption) by using a timeout greater than 0.
             for (s, event) in poller.ipoll(0):
                 # If event has bits other than POLLIN or POLLOUT then print it.
                 if event & ~(select.POLLIN | select.POLLOUT):
@@ -97,11 +97,11 @@ class CaptivePortal:
 
     @staticmethod
     def _create_dns(poller, addr):
-        addrBytes = MicroDNSSrv.ipV4StrToBytes(addr)
+        addr_bytes = MicroDNSSrv.ipV4StrToBytes(addr)
 
         def resolve(name):
             _logger.info("resolving %s", name)
-            return addrBytes
+            return addr_bytes
 
         return MicroDNSSrv(resolve, poller)
 

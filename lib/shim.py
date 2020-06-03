@@ -28,7 +28,7 @@ def read_text(filename):
         return file.read()
 
 
-# Note: `join`, `split` and `shim` were copied from from https://github.com/micropython/micropython-lib/blob/master/os.path/os/path.py
+# Note: `join`, `split` and `dirname` were copied from from https://github.com/micropython/micropython-lib/blob/master/os.path/os/path.py
 
 
 # os.path.join.
@@ -43,14 +43,14 @@ def join(*args):
 # os.path.split.
 def split(path):
     if path == "":
-        return ("", "")
+        return "", ""
     r = path.rsplit("/", 1)
     if len(r) == 1:
-        return ("", path)
+        return "", path
     head = r[0]  # .rstrip("/")
     if not head:
         head = "/"
-    return (head, r[1])
+    return head, r[1]
 
 
 # os.path.dirname.
