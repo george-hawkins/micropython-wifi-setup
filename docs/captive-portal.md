@@ -7,11 +7,11 @@ There's nothing very sophisticated about how this is achieved. When you first co
 
 So if you try to go to e.g. <https://news.ycombinator.com/item?id=22867627>, the network's DNS responds to `news.ycombinator.com` with the address of the login web server and then it redirects the request for `/item?id=22867627` to its login page.
 
-For an end user, trying to access a web page and then being redirected to a login page is a bit confusing so these days most OSes try to detect this upfront and immediately present the login page as part of the process of selecting the WiFi network.
+For an end-user, trying to access a web page and then being redirected to a login page is a bit confusing so these days most OSes try to detect this upfront and immediately present the login page as part of the process of selecting the WiFi network.
 
 They do this by probing for a URL that they know exists and which has a defined response, e.g. Android devices typically check for <http://connectivitycheck.gstatic.com/generate_204>. If they get the defined response, e.g. `204 No Content`, then they assume they have full internet access, if they get no response they know they're on a private network with no internet access and if they get a redirect they assume they're in a captive portal and prompt the user to login via the page that they're redirected to.
 
-Each OS does things _slightly_ differently but for more on the fairly representitive process used by Chromium see their [network portal detection](https://www.chromium.org/chromium-os/chromiumos-design-docs/network-portal-detection) documentation.
+Each OS does things _slightly_ differently but for more on the fairly representative process used by Chromium see their [network portal detection](https://www.chromium.org/chromium-os/chromiumos-design-docs/network-portal-detection) documentation.
 
 So the captive portal setup used by this project requires two things - a DNS server and a web server. Very lightweight implementations of both are used. These are derived from [MicroWebSrv2](https://github.com/jczic/MicroWebSrv2) and [MicroDNSSrv](https://github.com/jczic/MicroDNSSrv) (both by [Jean-Christophe Bos](https://github.com/jczic)).
 

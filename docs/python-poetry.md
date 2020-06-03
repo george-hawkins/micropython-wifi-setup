@@ -5,13 +5,13 @@ This page documents the rather involved steps needed to manage this project and 
 
 In the end, I gave up on this idea for the simple reason that MicroPython's [`upip`](https://docs.micropython.org/en/latest/reference/packages.html#upip-package-manager) doesn't work at this time, on the ESP32 port, and hasn't worked for quite some time (see MicroPython issue [#5543](https://github.com/micropython/micropython/issues/5543), including one [comment](https://github.com/micropython/micropython/issues/5543#issuecomment-621306525) from me).
 
-When starting in on this, the difference between a [source distribution](https://docs.python.org/3/distutils/sourcedist.html), an egg and a wheel wasn't clear to me (see ["wheel vs egg"](https://packaging.python.org/discussions/wheel-vs-egg/)). And I'm not entirely sure that the distinction between a source distribution and an egg is clear in how MicroPython handles things. The MicroPython documentation says it uses the source distribution format for packaging. However it depends on egg related data included in such a distribution. It's true that [setuptools](https://setuptools.readthedocs.io/en/latest/) includes egg information in a source distribution. However Poetry does not and this appears to be valid. It would probably be clearer if `upip` explicitly worked with eggs rather than with source distributions that happen to contain egg related data.
+When starting in on this, the difference between a [source distribution](https://docs.python.org/3/distutils/sourcedist.html), an egg and a wheel wasn't clear to me (see ["wheel vs egg"](https://packaging.python.org/discussions/wheel-vs-egg/)). And I'm not entirely sure that the distinction between a source distribution and an egg is clear in how MicroPython handles things. The MicroPython documentation says it uses the source distribution format for packaging. However, it depends on egg-related data included in such a distribution. It's true that [setuptools](https://setuptools.readthedocs.io/en/latest/) includes egg information in a source distribution. However, Poetry does not and this appears to be valid. It would probably be clearer if `upip` explicitly worked with eggs rather than with source distributions that happen to contain egg-related data.
 
 It took me quite a while to realize that there's a fair degree of mismatch between what Poetry produces and what the MicroPython `upip` package manager wants to consume.
 
-Poetry creates a source distribution that contains a `setup.py` but does not contain the egg related data that `upip` wants. Poetry has the egg related support it needs for dealing with existing packages, however it only builds source distributions (without egg related data) and the newer wheel format.
+Poetry creates a source distribution that contains a `setup.py` but does not contain the egg-related data that `upip` wants. Poetry has the egg-related support it needs for dealing with existing packages, however, it only builds source distributions (without egg-related data) and the newer wheel format.
 
-`upip` depends on [`setuptool.setup`](https://setuptools.readthedocs.io/en/latest/setuptools.html), in your project's `setup.py`, being run with `cmdclass` set to bind `sdist` to the version provided by [`sdist_upip.py`](https://github.com/micropython/micropython-lib/blob/master/sdist_upip.py) (see the [documentation](https://docs.micropython.org/en/latest/reference/packages.html#creating-distribution-packages)). This results in a source distribution with a custom compression size and with `setup.py` excluded from the bundle (see [here](https://docs.micropython.org/en/latest/reference/packages.html#distribution-packages) for more details). Poetry auto-generates a `setup.py` when building a source distribution and bundles it in with the distribution. However the `setup.py` isn't executed at this point (it's only executed later by `pip` when _installing_ the distribution) so it can't affect e.g. the compression or anything else.
+`upip` depends on [`setuptool.setup`](https://setuptools.readthedocs.io/en/latest/setuptools.html), in your project's `setup.py`, being run with `cmdclass` set to bind `sdist` to the version provided by [`sdist_upip.py`](https://github.com/micropython/micropython-lib/blob/master/sdist_upip.py) (see the [documentation](https://docs.micropython.org/en/latest/reference/packages.html#creating-distribution-packages)). This results in a source distribution with a custom compression size and with `setup.py` excluded from the bundle (see [here](https://docs.micropython.org/en/latest/reference/packages.html#distribution-packages) for more details). Poetry auto-generates a `setup.py` when building a source distribution and bundles it in with the distribution. However, the `setup.py` isn't executed at this point (it's only executed later by `pip` when _installing_ the distribution) so it can't affect e.g. the compression or anything else.
 
 Given all that, let's see how I got to a point where I could create and publish MicroPython compatible packages to PyPI. However, if I was doing this again I would create `setup.py` by hand and not introduce Poetry into the mix.
 
@@ -69,7 +69,7 @@ $ poetry install
 
 However, as noted later this won't work as MicroPython dependencies, like micropython-logging, aren't installable.
 
-The install process would produce a `poetry.lock` file. If your project is not a library then you should checkin the `poetry.lock` created by Poetry, however for a library you should not (see [here](https://python-poetry.org/docs/libraries/#lock-file)).
+The install process would produce a `poetry.lock` file. If your project is not a library then you should check-in the `poetry.lock` created by Poetry, however for a library you should not (see [here](https://python-poetry.org/docs/libraries/#lock-file)).
 
 Note that the `build` and `publish` steps, covered later, don't depend on `install` having been run or having succeeded.
 
@@ -84,7 +84,7 @@ I saved displayed token to `~/pypi-token` and then, as per the Poetry configurin
 poetry config pypi-token.pypi $(< ~/pypi-token)
 ```
 
-Usually `config` entries end up in your global Poetry config file (on Linux, it's `.config/pypoetry/config.toml`, for other platforms see [here](https://python-poetry.org/docs/configuration/)). However for tokens Poetry uses [keyring](https://pypi.org/project/keyring/) to store this value in your system's keyring service.
+Usually, `config` entries end up in your global Poetry config file (on Linux, it's `.config/pypoetry/config.toml`, for other platforms see [here](https://python-poetry.org/docs/configuration/)). However, for tokens, Poetry uses [keyring](https://pypi.org/project/keyring/) to store this value in your system's keyring service.
 
 Building and publishing
 -----------------------
@@ -118,7 +118,7 @@ Your project is available on PyPI and, if logged in, you can find it under your 
 Problems begin
 --------------
 
-Unfortunately, if any of your dependencies are MicroPython ones you can't install the resulting package because you simple can't install the dependencies, e.g. try directly installing something like micropython-logging:
+Unfortunately, if any of your dependencies are MicroPython ones you can't install the resulting package because you simply can't install the dependencies, e.g. try directly installing something like micropython-logging:
 
 ```
 $ pip install micropython-logging
@@ -169,7 +169,7 @@ Aside: another interesting thing you can do with `packages` is specify that a pa
 
 ---
 
-Next it turns out that while `upip` works with source distributions, it depends on the egg related information that setuptools includes in a source distribution but which Poetry does not. In particular it expects to find a file of the form `foo_bar.egg-info/requires.txt` that contains the dependencies of your project (see [`upip.py:92](https://github.com/micropython/micropython/blob/69661f3/tools/upip.py#L92)).
+Next, it turns out that while `upip` works with source distributions, it depends on the egg-related information that setuptools includes in a source distribution but which Poetry does not. In particular, it expects to find a file of the form `foo_bar.egg-info/requires.txt` that contains the dependencies of your project (see [`upip.py:92](https://github.com/micropython/micropython/blob/69661f3/tools/upip.py#L92)).
 
 You can generate `requires.txt` by hand and it will be included in your sdist package - this is enough to keep `upip` happy.
 
@@ -193,9 +193,9 @@ Setuptools automatically generates the egg information that Poetry does not. You
 $ python setup.py egg_info
 ```
 
-The `requires.txt` file will contain any version contraints specified in the `.toml` file, however `upip` cannot handle these contraints and they should be removed (as shown in the fully worked example later).
+The `requires.txt` file will contain any version constraints specified in the `.toml` file, however, `upip` cannot handle these constraints and they should be removed (as shown in the fully worked example later).
 
-Once you have a generataed or hand-crafted `requires.txt`, Poetry will include it in the sdist package that it creates and this is enough to convince the UNIX port of `upip` to accept your package (published to PyPI _without_ the corresponding wheel) and install it along with its dependencies:
+Once you have a generated or hand-crafted `requires.txt`, Poetry will include it in the sdist package that it creates and this is enough to convince the UNIX port of `upip` to accept your package (published to PyPI _without_ the corresponding wheel) and install it along with its dependencies:
 
 ```
 $ micropython -m upip install -p lib foo-bar
@@ -237,7 +237,7 @@ Error installing 'micropython-logging': [Errno 5] EIO, packages may be partially
 
 It seem `upip` hasn't worked on the ESP32 port of MicroPython for quite some time - see [#5543](https://github.com/micropython/micropython/issues/5543).
 
-So this make publishing to PyPI a rather moot point (except that one uses the UNIX port).
+So this makes publishing to PyPI a rather moot point (except that one uses the UNIX port).
 
 Putting it altogether
 ---------------------

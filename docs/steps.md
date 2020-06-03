@@ -7,8 +7,8 @@ WiFi setup steps
 from wifi_setup.wifi_setup import WiFiSetup
 
 # You should give every device a unique name (to use as its access point name).
-setup = WiFiSetup("ding-5cd80b5")
-sta = setup.connect_or_setup()
+ws = WiFiSetup("ding-5cd80b5")
+sta = ws.connect_or_setup()
 print("WiFi is setup")
 ```
 
@@ -23,17 +23,17 @@ Once the device is restarted, you're ready to connect it to the same WiFi networ
 
 <img height="512" src="images/steps/02-wifi-settings.png">
 
-**4.** You look at your MicroPython device, which you labelled with the name you gave it in the Python code above.
+**4.** You look at your MicroPython device, which you labeled with the name you gave it in the Python code above.
 
 ![device](images/labeled-device.jpg)
 
-<sub>The eagle eyed will notice the mismatch between "ding-5cd80b1" here and "ding-5cd80b5" seen elsewhere - I haven't updated this photo to match.</sub>
+<sub>The eagle-eyed will notice the mismatch between "ding-5cd80b1" here and "ding-5cd80b5" seen elsewhere - I haven't updated this photo to match.</sub>
 
 **5.** You plug in your device and see it appear as an open network in your WiFi settings.
 
 <img height="512" src="images/steps/03-device-advertising.png">
 
-**6.** You select it and, like a network in a coffee shop or airport, you're told you have to login.
+**6.** You select it and, like a network in a coffee shop or airport, you're told you have to log in.
 
 <img height="512" src="images/steps/04-tap-to-sign-in.png">
 
@@ -93,6 +93,6 @@ You may notice a red lock icon in some of the screenshots, this indicates that t
 
 By default the IP address of your device is displayed when it successfully connects to the chosen network however, you can configure the code involved to return whatever you want, e.g. an MQTT topic name.
 
-The dialog that presents you with the IP address uses a kind of [dead man's switch](https://en.wikipedia.org/wiki/Dead_man%27s_switch) logic in the background that keeps the temporary WiFi network alive as long as it's showing. So the temporary WiFi network will shutdown if you explicitly close the dialog (by pressing OK) or if you e.g. simply manually switch back to your normal WiFi network.
+The dialog that presents you with the IP address uses a kind of [dead man's switch](https://en.wikipedia.org/wiki/Dead_man%27s_switch) logic in the background that keeps the temporary WiFi network alive as long as it's showing. So the temporary WiFi network will shut down if you explicitly close the dialog (by pressing OK) or if you e.g. simply manually switch back to your normal WiFi network.
 
 The ghost is a tiny CSS demo by Helen V. Holmes and was found [here](https://codepen.io/scoooooooby/pen/pecdI).

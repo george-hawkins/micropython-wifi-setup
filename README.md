@@ -8,7 +8,7 @@ For a quick walkthru of the following steps, with screenshots, click [here](docs
 The system works like this:
 
 * Configure your device with a unique ID, to use as its access point name, and physically label the device with the ID.
-* On startup the WiFi setup process checks if it already has credentials for a WiFi network and if so tries to connect to that.
+* On startup, the WiFi setup process checks if it already has credentials for a WiFi network and if so tries to connect to that.
 * If it does not have existing credentials or cannot connect, it creates a temporary access point.
 * The user looks at the label on the device and selects that access point on their phone.
 * The access point is open but behaves like a [captive portal](https://en.wikipedia.org/wiki/Captive_portal), the phone detects this and prompts the user to go to a login webpage.
@@ -26,14 +26,17 @@ Using this library
 
 ![device](docs/images/labeled-device.jpg)
 
-Each device should be given a unique name. Then you just need to add two lines of code at the start of your `main.py` file:
+Each device should be given a unique name. Then you just need to add the following to the start of your `main.py`:
+
 
 ```python
+from wifi_setup.wifi_setup import WiFiSetup
+
 ws = WiFiSetup("ding-5cd80b1")
 sta = ws.connect_or_setup()
 ```
 
-Above, I've specified `"ding-5cd80b1"` as the device unique name (which it will use as the name of the temporary access point that it creates). And calling `ws.connect_or_setup()` will go through the steps outlined up above. Once complete the resulting [`network.WLAN`](https://docs.micropython.org/en/latest/library/network.WLAN.html), corresponding to the connected network, will be assigned to `sta`.
+Above, I've specified `"ding-5cd80b1"` as the device's unique name (which it will use as the name of the temporary access point that it creates). And calling `ws.connect_or_setup()` will go through the steps outlined up above. Once complete the resulting [`network.WLAN`](https://docs.micropython.org/en/latest/library/network.WLAN.html), corresponding to the connected network, will be assigned to `sta`.
 
 Or you can take a more fine grained approach:
 
@@ -48,7 +51,7 @@ if not sta:
 
 Here `ws.has_ssid()` checks if credentials for an SSID already exist, if so just connect with `ws.connect()` (if this fails it returns `None`). If there are no existing credentials or `ws.connect()` fails then call `ws.setup()` to create a temporary access point so that the user can go through the steps up above.
 
-If you don't want your board to automatically going into setup mode, you could e.g. make calling `ws.setup()` conditional on a button being held down during startup.
+If you don't want your board to automatically go into setup mode, you could e.g. make calling `ws.setup()` conditional on a button being held down during startup.
 
 If you want to you can clear any existing credentials with the static method `WiFiSetup.clear()`.
 
@@ -103,7 +106,7 @@ Then to copy over a demo `main.py` and some supporting files:
     > cd demo
     > cp -r main.py www /pyboard
 
-The demo just includes the Python code outlined up above followed by a simple webserver that can be accessed, once the board is connected to a network, in order to demonstrate that the whole process worked.
+The demo just includes the Python code outlined up above followed by a simple web server that can be accessed, once the board is connected to a network, in order to demonstrate that the whole process worked.
 
 Then enter the REPL and press the reset button on the board (the `EN` button if you're using an Espressif ESP32 DevKitC board):
 
@@ -111,9 +114,9 @@ Then enter the REPL and press the reset button on the board (the `EN` button if 
     ...
     INFO:captive_portal:captive portal web server and DNS started on 192.168.4.1
 
-You'll see a lot of boot related line scroll by and finally you should see it announce that it's started a captive portal. Then just go to your phone and walk through the phone related steps that are shown with screenshot [here](docs/steps.md). Once connected to your network your board will serve a single web page (of a cute little ghost).
+You'll see a lot of boot related lines scroll by and finally, you should see it announce that it's started a captive portal. Then just go to your phone and walk through the phone related steps that are shown with screenshots [here](docs/steps.md). Once connected to your network, your board will serve a single web page (of a cute little ghost).
 
-If you reset the board it will now always connect to the network you just configured via your phone. If you want to clear the stored credentials just do:
+If you reset the board it will now always try to connect to the network you just configured via your phone. If you want to clear the stored credentials just do:
 
     > repl
     >>> WiFiSetup.clear()
@@ -121,9 +124,9 @@ If you reset the board it will now always connect to the network you just config
 PyPI and this library
 ---------------------
 
-I did initially try to make this library available via [PyPI](https://pypi.org/) so that it could be installed using [`upip`](https://docs.micropython.org/en/latest/reference/packages.html#upip-package-manager). This took much longer than it should have due to my insistence on trying to get the process to work using [Python Poetry](https://python-poetry.org/) (see my notes [here](docs/python-poetry.md)). But in the end the effort was all rather pointless as `upip` has not worked for quite some time on the ESP32 port of MicroPython (due to TLS related issues, see issue [#5543](https://github.com/micropython/micropython/issues/5543)).
+I did initially try to make this library available via [PyPI](https://pypi.org/) so that it could be installed using [`upip`](https://docs.micropython.org/en/latest/reference/packages.html#upip-package-manager). This took much longer than it should have due to my insistence on trying to get the process to work using [Python Poetry](https://python-poetry.org/) (see my notes [here](docs/python-poetry.md)). But in the end, the effort was all rather pointless as `upip` has not worked for quite some time on the ESP32 port of MicroPython (due to TLS related issues, see issue [#5543](https://github.com/micropython/micropython/issues/5543)).
 
-Anyway, there something fundamentally odd about installing a library that's meant to setup a WiFi connection using a tool, i.e. `upip`, that requires that your board already has a WiFi connection.
+Anyway, there something fundamentally odd about installing a library that's meant to set up a WiFi connection using a tool, i.e. `upip`, that requires that your board already has a WiFi connection.
 
 Given that, issue #5543 and Thorsten von Eicken's [comment](https://github.com/micropython/micropython/issues/5543#issuecomment-621341369) that "I have the feeling that long term MP users don't use upip" (I did not use `upip` at any point when creating this project), I decided to give up on publishing this library to PyPI.
 
@@ -145,7 +148,7 @@ You could of course just copy the micropython-wifi-setup `lib` directory into yo
 Web resources
 -------------
 
-The web related resources found in [`lib/wifi_setup/www`](lib/wifi_setup/www) were created in another project - [material-wifi-setup](https://github.com/george-hawkins/material-wifi-setup).
+The web-related resources found in [`lib/wifi_setup/www`](lib/wifi_setup/www) were created in another project - [material-wifi-setup](https://github.com/george-hawkins/material-wifi-setup).
 
 If you check out that project in the same parent directory as this project and then make changes there, you can rebuild the resources and copy them here like so:
 
@@ -160,11 +163,11 @@ The provided web interface should work for any version of Chrome, Firefox, Edge 
 Captive portals
 ---------------
 
-This library uses what's termed a captive portal - this depends on being able to respond to all DNS requests. This works fine on phones - it's the same process that's used whenever you connect to public WiFi at a coffee shop or an airport. However, on a laptop or desktop things may be different. If you've explicitly set your nameserver to something like Google's [public DNS](https://en.wikipedia.org/wiki/Google_Public_DNS) then your computer may never try resolving addresses via the DNS server that's part of this library. In this case, once connected to the temporary access point, you have to explicitly navigate to the IP address we saw in the logging output above, i.e.:
+This library uses what's termed a captive portal - this depends on being able to respond to all DNS requests. This works fine on phones - it's the same process that's used whenever you connect to public WiFi at a coffee shop or an airport. However, on a laptop or desktop, things may be different. If you've explicitly set your nameserver to something like Google's [public DNS](https://en.wikipedia.org/wiki/Google_Public_DNS) then your computer may never try resolving addresses via the DNS server that's part of this library. In this case, once connected to the temporary access point, you have to explicitly navigate to the IP address we saw in the logging output above, i.e.:
 
     INFO:captive_portal:captive portal web server and DNS started on 192.168.4.1
 
-A more sophisticated setup would sniff all packets and spot DNS requests, even to external but unreachable services like 8.8.8.8, and spoof a response - however this requires [promiscuous mode](https://en.wikipedia.org/wiki/Promiscuous_mode) which isn't currently supported in MicroPython.
+A more sophisticated setup would sniff all packets and spot DNS requests, even to external but unreachable services like 8.8.8.8, and spoof a response - however, this requires [promiscuous mode](https://en.wikipedia.org/wiki/Promiscuous_mode) which isn't currently supported in MicroPython.
 
 For more about captive portals see the captive portal notes in [`docs/captive-portal.md`](docs/captive-portal.md).
 
@@ -173,9 +176,9 @@ Reusable parts
 
 There's a substantial amount of code behind the WiFi setup process. Some of the pieces may be useful in your own project.
 
-The most interesting elements are cut-down versions of [MicroWebSrv2](https://github.com/jczic/MicroWebSrv2), [MicroDNSSrv](https://github.com/jczic/MicroDNSSrv/), [schedule](https://github.com/rguillon/schedule) and [logging](https://github.com/micropython/micropython-lib/blob/master/logging). The web server, i.e. MicroWebSrv2, is the most dramatically reworked of these, though the core request and response classes (and the underlying networking related classes) remain much as they were.
+The most interesting elements are cut-down versions of [MicroWebSrv2](https://github.com/jczic/MicroWebSrv2), [MicroDNSSrv](https://github.com/jczic/MicroDNSSrv/), [schedule](https://github.com/rguillon/schedule) and [logging](https://github.com/micropython/micropython-lib/blob/master/logging). The web server, i.e. MicroWebSrv2, is the most dramatically reworked of these, though the core request and response classes (and the underlying networking-related classes) remain much as they were.
 
-Most of the changes were undertaken to reduce memory usage and to get everything to work well with an event loop based around `select.poll()` and `select.poll.ipoll(...)` (where services are fed with events - what I call pumping). All threading has been removed from the web server and it can only handle one request at a time. Given the use of polling it would be possible to support multiple concurrent requests - the reason for not doing this, is to avoid the additional memory required to support send and receive buffers for more than one request at a time.
+Most of the changes were undertaken to reduce memory usage and to get everything to work well with an event loop based around `select.poll()` and `select.poll.ipoll(...)` (where services are fed with events - what I call pumping). All threading has been removed from the web server and it can only handle one request at a time. Given the use of polling, it would be possible to support multiple concurrent requests - the reason for not doing this, is to avoid the additional memory required to support send and receive buffers for more than one request at a time.
 
 ### The web server
 
@@ -199,9 +202,9 @@ while True:
 
 Create a `www` directory and add an `index.html` there. For every different file suffix used, you have to add a suffix-to-[MIME type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types) mapping. In the snippet above the only mapping provided is from the suffix `html` to MIME type `text/html`.
 
-One feature that I added to the web server is the ability to store your files in compressed form, e.g. `index.html.gz` rather than `index.html`, this allowed me to reduce the storage needed for the web resources needed for this project by about a third. See the compression section [here](docs/request-examples.md#compression) for more details.
+One feature that I added to the web server is the ability to store your files in compressed form, e.g. `index.html.gz` rather than `index.html`, this allowed me to reduce by almost two-thirds the storage needed for the web resources used by this project. See the compression section [here](docs/request-examples.md#compression) for more details.
 
-Note: if you're looking at the web server code and notice camelCase used in some place and more [PEP 8](https://www.python.org/dev/peps/pep-0008/) compliant snake_case in others, this is deliberate - the original code used camelCase and I used snake_case to make clearer what functions and variables I'd introduced.
+Note: if you're looking at the web server code and notice camelCase used in some places and more [PEP 8](https://www.python.org/dev/peps/pep-0008/) compliant snake_case in others, this is deliberate - the original code used camelCase and I used snake_case to make clearer what functions and variables I'd introduced.
 
 ### The REST module
 
@@ -225,7 +228,7 @@ slim_server.add_module(WebRouteModule([
 ]))
 ```
 
-Then you can test this logic like so (replace `$ADDR` with address of your device):
+Then you can test this logic like so (replace `$ADDR` with the address of your device):
 
 ```
 $ curl http://$ADDR/api/hello
@@ -235,7 +238,7 @@ $ curl --data 'message=foobar' http://$ADDR/api/log
 
 For more on using `curl` like this with the server, and on how things like how setting the header `Accept: application/json` affects things, see these [notes](docs/request-examples.md).
 
-**Important:** for each request the modules are called in the order that they're registered using `add_module(...)`, if you use `WebRouteModule` you _must_ register it before `FileserverModule` as currently the `FileserverModule` will respond to any `GET` request that it cannot resolve with `404 Not Found` without giving another module a chance to handle the request.
+**Important:** for each request, the modules are called in the order that they're registered using `add_module(...)`, if you use `WebRouteModule` you _must_ register it before `FileserverModule` as currently, the `FileserverModule` will respond to any `GET` request that it cannot resolve with `404 Not Found` without giving another module a chance to handle the request.
 
 Note: the original MicroWebSrv2 logic also supported [route arguments](https://github.com/jczic/MicroWebSrv2/blob/master/docs/index.md#route-args), i.e. you could specify values as part of the path, e.g. it could automatically parse out the `5cd80b1` value from a path like `/fetch/id/5cd80b1`. This behavior isn't supported in this cut-down version, parameters are only parsed out of the [query string](https://en.wikipedia.org/wiki/Query_string), e.g. `/fetch?id=5cd80b1`, or out of form data (as shown in the snippet above).
 
@@ -260,7 +263,7 @@ while True:
         dns.pump(s, event)
 ```
 
-Here `sta` is a `network.WLAN` instance corresponding to your current network connection, we use it to get the devices address and convert it into the byte format used by DNS. We provide a `resolve` function that, given a `name`, returns an address - the simple example function just prints the name and resolves every name to the board's address.
+Here `sta` is a `network.WLAN` instance corresponding to your current network connection, we use it to get the device's address and convert it into the byte format used by DNS. We provide a `resolve` function that, given a `name`, returns an address - the simple example function just prints the name and resolves every name to the board's address.
 
 ### Scheduler
 
@@ -280,7 +283,7 @@ while True:
     schedule.run_pending()
 ```
 
-Here we've registered a job to execute in 5 seconds time. If the function `do_something` didn't return anything then it would be run every 5 seconds forever more, returning `CancelJob` cancels the job. The job can also be canceled by calling `schedule.cancel_job(...)` on the `job` object we created.
+Here we've registered a job to execute in 5 seconds time. If the function `do_something` didn't return anything then it would be run every 5 seconds forevermore, returning `CancelJob` cancels the job. The job can also be canceled by calling `schedule.cancel_job(...)` on the `job` object we created.
 
 `schedule.run_pending()` needs to be called regularly - this works well in combination with the event pumping loop seen in the previous examples. However, if used on its own it would probably make sense to combine it with `time.sleep(1)` in the loop shown in the example here.
 
@@ -301,7 +304,7 @@ count = 42
 _logger.warning("%s is now %d", name, count)
 ```
 
-This will log something like `WARNING:my_module:alpha is now 42` to standard error. As you can see, the logger uses the classic [printf-style formatting](https://docs.python.org/3/library/stdtypes.html#old-string-formatting) that you typically see used with the `%` operator, e.g. `"%s is %d" % ("alpha", 42)`. However here you don't need the `%` operator and the arguments don't need to wrapped up as a tuple.
+This will log something like `WARNING:my_module:alpha is now 42` to standard error. As you can see, the logger uses the classic [printf-style formatting](https://docs.python.org/3/library/stdtypes.html#old-string-formatting) that you typically see used with the `%` operator, e.g. `"%s is %d" % ("alpha", 42)`. However here you don't need the `%` operator and the arguments don't need to be wrapped up as a tuple.
 
 Note: this cut-down version of `Logger` requires that you create `Logger` instances, as shown above, it doesn't support the usage `logging.warning(...)` where a default root logger is used.
 

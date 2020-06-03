@@ -25,7 +25,7 @@ Tab back to the first area and use `curl`:
     $ ADDR=192.168.0.178
     $ curl -v $ADDR/index.html
 
-To scroll backwards within an area use `ctrl-A` and `ESC` - you enter a quasi-vi mode and can move around with your mouse scroll wheel or the usual vi movement keys.
+To scroll backward within an area use `ctrl-A` and `ESC` - you enter a quasi-vi mode and can move around with your mouse scroll wheel or the usual vi movement keys.
 
 To exit scroll mode (actually it's called _copy mode_) just press `ESC` again (actually any key which doesn't have a special _copy mode_ meaning will do).
 

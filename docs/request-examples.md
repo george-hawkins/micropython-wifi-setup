@@ -1,9 +1,9 @@
 Curl for development
 ====================
 
-During development it can be useful to have the WiFi setup process listening for requests on your main network rather than starting its own access point.
+During development, it can be useful to have the WiFi setup process listening for requests on your main network rather than starting its own access point.
 
-In this state you can use `curl` to experiment with the basic REST interface of the setup process.
+In this state, you can use `curl` to experiment with the basic REST interface of the setup process.
 
 Example requests
 ----------------
@@ -58,7 +58,7 @@ The output isn't very readable - but everything is there.
 Compression
 -----------
 
-One of the features I added to the web server used here is that if it you request a file like `index.html` and there's no such file, it then checks for `index.html.gz`. If this file exists then the compressed file is served with the `Content-Encoding` header set to `gzip` to indicate this. This saves on storage space on the device and in transmission time to the client (which can typically handle the decompression step far faster than the board could).
+One of the features I added to the web server used here is that if you request a file like `index.html` and there's no such file, it then checks for `index.html.gz`. If this file exists then the compressed file is served with the `Content-Encoding` header set to `gzip` to indicate this. This saves on storage space on the device and in transmission time to the client (which can typically handle the decompression step far faster than the board could).
 
 Technically a server should only serve compressed content if the client used the `Accept-Encoding` to indicate that it can consume such content. However, in this setup this check isn't done and is simply assumed.
 
