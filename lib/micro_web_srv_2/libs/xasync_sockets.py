@@ -184,7 +184,11 @@ class XAsyncTCPClient(XAsyncSocket):
     # ------------------------------------------------------------------------
 
     def _expired(self):
-        _logger.warning(
+        # This actually happens regularly. It seems to be a speed trick used by browsers,
+        # they open multiple concurrent connections in _anticipation_ of needing them for
+        # additional requests, e.g. as a page loads. Some of these connections are never
+        # used and this eventually triggers the expiration logic here.
+        _logger.debug(
             "connection from %s:%s expired", self._cliAddr[0], self._cliAddr[1]
         )
 

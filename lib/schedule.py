@@ -132,7 +132,7 @@ class Job(object):
 
     def run(self):
         # Run the job and immediately reschedule it.
-        logger.info("Running job %s", self)
+        logger.debug("Running job %s", self)
         ret = self.job_func()
         self.last_run = now()
         self._schedule_next_run()
