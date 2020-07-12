@@ -33,7 +33,7 @@ class WsManager:
             return
         ws_client = self._clients[fileno]
         try:
-            message = self._message_extractor(ws_client.ws.readline)
+            message = self._message_extractor(ws_client.ws.readinto)
         except Exception as e:
             sys.print_exception(e)
             self._remove_ws_client(fileno)
