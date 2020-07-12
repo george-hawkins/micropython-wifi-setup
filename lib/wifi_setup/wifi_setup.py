@@ -64,6 +64,12 @@ class WiFiSetup:
     def _connect(self, ssid, password):
         _logger.info("attempting to connect to %s", ssid)
 
+        # Now use the ESSID, i.e. the temporary access point name, as the device
+        # hostname when making the DHCP request. MicroPython will then also
+        # advertise this name using mDNS and you should be able to access the
+        # device as <hostname>.local.
+        self._sta.config(dhcp_hostname=self._essid)
+
         # Password may be none if the network is open.
         self._sta.connect(ssid, password)
 

@@ -19,7 +19,10 @@ The system works like this:
 * The user can now use the IP address they have to access the device.
 * The device stores the network credentials and will use them to reconnect whenever the device is restarted.
 
-Note: the setup process takes a callback that can perform additional steps on connecting to the network and can return something other than an IP address, e.g. an MQTT topic name.
+Notes:
+
+* the setup process takes a callback that can perform additional steps on connecting to the network and can return something other than an IP address, e.g. an MQTT topic name.
+* when connecting to your WiFi network, the code now also uses the unique ID, that you give your device, as its `dhcp_hostname`. MicroPython will (in addition to using this name when making the DHCP request) advertise this name using mDNS. This _should_ make it possible to access your device as _unique-name.local_ which is far more convenient than using an IP address and should continue to work even if the underlying IP address changes. However, mDNS support varies by platform (though in general, all modern operating systems support it). A bigger issue is that the underlying ESP-IDF currently has a bug in how it replies to mDNS - I've filed an issue relating to this, see [`NOTES.md`](docs/NOTES.md) for more details.
 
 Using this library
 ------------------

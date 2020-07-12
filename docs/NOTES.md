@@ -165,3 +165,29 @@ It was then cropped to size using this SuperUser StackExchange [answer](https://
     $ ffmpeg -i wifi-setup3.mp4 -vf crop=304:540:328:0 output.mp4
 
 For whatever reason, the suggested cropping was a little over-aggressive (6 pixels at top and bottom) so I manually adjusted the values.
+
+
+mDNS bug
+--------
+
+I used Wireshark to capture a pcap file:
+
+    $ sudo wireshark
+
+My host system is a wired Ubuntu machine - initially I used _eth0_ as the capture interface but, for whatever reason, this didn't see UDP traffic. Selecting the _any_ interface instead resolved this.
+
+I then used the display filter `udp.port eq 5353` and used `dig` to query a device that I knew would respond correctly and then to query an ESP32 device.
+
+    $ dig +short -p 5353 @224.0.0.251 daedalus.local
+    192.168.0.17
+    $ dig +short -p 5353 @224.0.0.251 ding-5cd80b3.local
+    ;; Warning: ID mismatch: expected ID 39315, got 0
+    ;; Warning: ID mismatch: expected ID 39315, got 0
+    ;; Warning: ID mismatch: expected ID 39315, got 0
+    ;; connection timed out; no servers could be reached
+
+I saved the resulting pcap file and noted the particular frames that I wanted to keep. I then edited the pcap file to produce one containing just these frames:
+
+    $ editcap -r capture.pcapng mdns.pcapng 35 36 91 93 172 174 261 263
+
+I've logged issue [#5574](https://github.com/espressif/esp-idf/issues/5574) against the ESP-IDF to cover this.
