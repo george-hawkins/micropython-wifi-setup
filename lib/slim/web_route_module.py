@@ -48,9 +48,6 @@ class WebRouteModule:
         self._registeredRoutes = routes
 
     def OnRequest(self, request):
-        if request.IsUpgrade:
-            return
-
         route_result = self._resolve_route(request.Method, request.Path)
         if not route_result:
             return

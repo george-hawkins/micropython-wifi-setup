@@ -90,6 +90,8 @@ class HttpResponse:
         self._sendingBuf = None
         self._hdrSent = False
 
+        self._switch_result = None
+
     # ------------------------------------------------------------------------
 
     def SetHeader(self, name, value):
@@ -211,7 +213,15 @@ class HttpResponse:
 
     # ------------------------------------------------------------------------
 
-    def SwitchingProtocols(self, upgrade):
+    def _on_switched(self, xas_cli, _):
+        if not self._switch_result:
+            return
+
+        self._switch_result(xas_cli.detach_socket())
+        self._switch_result = None
+
+    def SwitchingProtocols(self, upgrade, switch_result=None):
+        self._switch_result = switch_result
         if not isinstance(upgrade, str) or len(upgrade) == 0:
             raise ValueError('"upgrade" must be a not empty string.')
         if self._hdrSent:
@@ -222,7 +232,7 @@ class HttpResponse:
         self.SetHeader("Connection", "Upgrade")
         self.SetHeader("Upgrade", upgrade)
         data = self._makeBaseResponseHdr(101)
-        self._xasCli.AsyncSendData(data)
+        self._xasCli.AsyncSendData(data, self._on_switched)
         self._hdrSent = True
 
     # ------------------------------------------------------------------------

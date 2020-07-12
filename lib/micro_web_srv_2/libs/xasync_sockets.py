@@ -21,6 +21,7 @@ class XClosedReason:
     ClosedByHost = 0x01
     ClosedByPeer = 0x02
     Timeout = 0x03
+    Detached = 0x04
 
 
 # ============================================================================
@@ -89,10 +90,19 @@ class XAsyncSocket:
 
     # ------------------------------------------------------------------------
 
-    def _close(self, closedReason=XClosedReason.Error, triggerOnClosed=True):
+    def detach_socket(self):
+        socket = self._socket
+        if not self._close(XClosedReason.Detached, do_close=False):
+            raise XAsyncSocketException("Failed to detach socket")
+        return socket
+
+    def _close(
+        self, closedReason=XClosedReason.Error, triggerOnClosed=True, do_close=True
+    ):
         if self._asyncSocketsPool.RemoveAsyncSocket(self):
             try:
-                self._socket.close()
+                if do_close:
+                    self._socket.close()
             except Exception as e:
                 sys.print_exception(e)
             self._socket = None
