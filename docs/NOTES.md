@@ -147,7 +147,7 @@ To check, provide a list of files and/or directories to `flake8`:
 
     $ flake8 ... | fgrep -v -e E501 -e E203 -e E722
 
-Here `fgrep` is used to ignore E501 (line too long) and E203 (whitespace before ':') as these are rules that Black and Flake8 disagree on. I also ignore E203 (do not use bare 'except') as I'm not prepared to enforce this rule in the code.
+Here `fgrep` is used to ignore E501 (line too long) and E203 (whitespace before ':') as these are rules that Black and Flake8 disagree on. I also ignore E722 (do not use bare 'except') as I'm not prepared to enforce this rule in the code.
 
 Android screen recorder
 -----------------------
