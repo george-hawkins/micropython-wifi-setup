@@ -23,6 +23,7 @@ class WiFiSetup:
         self._credentials = Credentials()
         self._sta = network.WLAN(network.STA_IF)
         self._sta.active(True)
+        self.captive_timeout = None
 
     def has_ssid(self):
         return self._credentials.get()[0] is not None
@@ -36,7 +37,9 @@ class WiFiSetup:
         from wifi_setup.captive_portal import CaptivePortal
 
         # `run` will only return once WiFi is setup.
-        CaptivePortal().run(self._essid, self._connect_new)
+        CaptivePortal().run(
+            self._essid, self._connect_new, captive_timeout=self.captive_timeout
+        )
 
         return self._sta
 

@@ -9,6 +9,7 @@ from shim import join, dirname
 
 import network
 import select
+import time
 import logging
 
 from schedule import Scheduler, CancelJob
@@ -20,11 +21,12 @@ _logger = logging.getLogger("captive_portal")
 # Rather than present a login page, this is a captive portal that lets you set up
 # access to your network. See docs/captive-portal.md for more about captive portals.
 class CaptivePortal:
-    def run(self, essid, connect):
+    def run(self, essid, connect, captive_timeout=None):
         self._schedule = Scheduler()
         self._connect = connect
         self._alive = True
         self._timeout_job = None
+        self.captive_timeout = captive_timeout
 
         self._ap = network.WLAN(network.AP_IF)
         self._ap.active(True)
@@ -38,10 +40,20 @@ class CaptivePortal:
 
         _logger.info("captive portal web server and DNS started on %s", addr)
 
+        # Used as reference for the Captive Portal timeout
+        if self.captive_timeout:
+            start = time.ticks_ms()
+
         # If no timeout is given `ipoll` blocks and the for-loop goes forever.
         # With a timeout the for-loop exits every time the timeout expires.
         # I.e. the underlying iterable reports that it has no more elements.
         while self._alive:
+            if (
+                self.captive_timeout
+                and time.ticks_diff(time.ticks_ms(), start) > self.captive_timeout
+            ):
+                _logger.info("Captive portal timeout reached")
+                return
             # Under the covers polling is done with a non-blocking ioctl call and the timeout
             # (or blocking forever) is implemented with a hard loop, so there's nothing to be
             # gained (e.g. reduced power consumption) by using a timeout greater than 0.
