@@ -12,6 +12,7 @@ import select
 import logging
 
 from schedule import Scheduler, CancelJob
+from shim import exists, read_text
 
 
 _logger = logging.getLogger("captive_portal")
@@ -20,6 +21,8 @@ _logger = logging.getLogger("captive_portal")
 # Rather than present a login page, this is a captive portal that lets you set up
 # access to your network. See docs/captive-portal.md for more about captive portals.
 class CaptivePortal:
+    _IDLE_TIMEOUT = "idle-timeout.txt"
+
     def run(self, essid, connect):
         self._schedule = Scheduler()
         self._connect = connect
@@ -37,6 +40,17 @@ class CaptivePortal:
         dns = self._create_dns(poller, addr)
 
         _logger.info("captive portal web server and DNS started on %s", addr)
+
+        if exists(self._IDLE_TIMEOUT):
+            idle_timeout = int(read_text(self._IDLE_TIMEOUT))
+            _logger.info("idle timeout set to %ds", idle_timeout)
+
+            def expire():
+                _logger.info("idle timeout expired")
+                self._alive = False
+                return CancelJob
+
+            self._schedule.every(idle_timeout).seconds.do(expire)
 
         # If no timeout is given `ipoll` blocks and the for-loop goes forever.
         # With a timeout the for-loop exits every time the timeout expires.
