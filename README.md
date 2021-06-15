@@ -124,6 +124,52 @@ If you reset the board it will now always try to connect to the network you just
     > repl
     >>> WiFiSetup.clear()
 
+Idle timeout
+------------
+
+By default, when your device has not already been configured with the credentials for a WiFi network, it will wait forever for someone to connect to its captive portal and provide it with appropriate credentials. If you'd like to be able to configure it to instead timeout after a given amount of time, e.g. 5 minutes, you can do that by making the following changes to [`captive_portal.py`](lib/wifi_setup/captive_portal.py).
+
+First pull in the utility functions `exists` and `read_text` below the existing `Scheduler` import:
+
+```
+from schedule import Scheduler, CancelJob
+from shim import exists, read_text
+```
+
+Then add a constant called `_IDLE_TIMEOUT` at the start of the `CaptivePortal` class:
+
+```Python
+class CaptivePortal:
+    _IDLE_TIMEOUT = "idle-timeout.txt"
+```
+
+And finally in the `run()` method, add the following block just _before_ the `while self._alive` loop:
+
+```Python
+if exists(self._IDLE_TIMEOUT):
+      idle_timeout = int(read_text(self._IDLE_TIMEOUT))
+      _logger.info("idle timeout set to %ds", idle_timeout)
+  
+      def expire():
+          _logger.info("idle timeout expired")
+          self._alive = False
+          return CancelJob
+  
+      self._schedule.every(idle_timeout).seconds.do(expire)
+```
+
+All this does is check if a file called `idle-timeout.txt` exists and, if it does, then it expects it to contain a number that it uses as the timeout value (in seconds).
+
+So to create `idle-timeout.txt`, you can use `rshell` again:
+
+    $ rshell --buffer-size 512 --quiet -p $PORT
+    $ cd /pyboard
+    $ echo 300 > idle-timeout.txt
+
+Here, we stored the value `300` in `idle-timeout.txt`, so now the `CaptivePortal` loop is scheduled to timeout after 300s, i.e. 5 minutes.
+
+Note: the logic above uses the existing scheduler `self._schedule` to run the `expiry` job every `idle_timeout` seconds - however, the job never runs more than once as it returns `CancelJob` which tells the scheduler not to run the job again.
+
 PyPI and this library
 ---------------------
 
